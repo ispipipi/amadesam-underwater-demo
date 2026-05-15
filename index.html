@@ -132,6 +132,55 @@ caseHtml=function(q,s){
 }
 const baseActOcr=act;
 act=function(e,el){const a=el?.dataset?.action;if(a==="run-ocr"){e.stopPropagation();runOcr(el.dataset.id);return}if(a==="apply-ocr"){e.stopPropagation();applyOcr(el.dataset.id);return}baseActOcr(e,el)}
+function compactMenu(){
+  groups.length=0;
+  groups.push(["Menu",[
+    ["dashboard","Dashboard","DB"],
+    ["quote-new","Cotizador","CZ"],
+    ["quotes","Operaciones","OP"],
+    ["history","Registros","RG"]
+  ]]);
+  Object.assign(titles,{
+    "quote-new":["Cotizador","Analisis con IA, disponibilidad y cotizaciones desde un solo flujo."],
+    quotes:["Operaciones","Expedientes vivos: cotizados, nominados, en curso o pendientes de cierre."],
+    history:["Registros","Cotizaciones ganadas/perdidas y expedientes facturados o cerrados."]
+  });
+}
+function isArchivedQuote(q){
+  const s=svcByQuote(q.id);
+  return q.status==="cancelled"||q.status==="closed"||!!s?.invoiced;
+}
+filteredQuotes=function(){
+  const text=state.filters.text.toLowerCase();
+  let rows=state.quotes.filter(q=>!isArchivedQuote(q)&&(!text||[jobNo(q),q.ship,q.client,q.services.join(" ")].join(" ").toLowerCase().includes(text))&&(state.filters.status==="all"||q.status===state.filters.status)&&(state.filters.client==="all"||q.client===state.filters.client));
+  const {key,dir}=state.sort;
+  return rows.sort((a,b)=>String(key==="ref"?jobNo(a):a[key]).localeCompare(String(key==="ref"?jobNo(b):b[key]))*(dir==="asc"?1:-1));
+}
+function quoteOutcome(q){
+  if(q.status==="cancelled")return"Perdida";
+  if(["confirmed","progress","report","closed"].includes(q.status)||svcByQuote(q.id)?.invoiced)return"Ganada";
+  return"Abierta";
+}
+history=function(){
+  const wonLost=state.quotes.filter(q=>quoteOutcome(q)!=="Abierta");
+  const archived=state.services.filter(s=>s.invoiced||s.status==="closed");
+  return`<div class="grid"><div class="panel"><div class="section"><div><h3>Registro de cotizaciones</h3><p>Ganadas y perdidas con motivo cuando esta disponible.</p></div></div><table><thead><tr><th>JN</th><th>Barco</th><th>Cliente</th><th>Resultado</th><th>Motivo</th><th>Importe</th></tr></thead><tbody>${wonLost.map(q=>`<tr><td class="mono">${h(jobNo(q))}</td><td>${h(q.ship)}</td><td>${h(q.client)}</td><td>${quoteOutcome(q)==="Ganada"?'<span class="badge confirmed">Ganada</span>':'<span class="badge cancelled">Perdida</span>'}</td><td>${h(q.lossReason||q.note||q.lastAction||"Sin motivo registrado")}</td><td class="money">${money.format(q.amount||0)}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">Sin cotizaciones cerradas aun.</td></tr>'}</tbody></table></div><div class="panel"><div class="section"><div><h3>Historial de expedientes</h3><p>Expedientes que ya salieron de Operaciones por cierre o facturacion.</p></div></div><table><thead><tr><th>JN</th><th>Barco</th><th>Cliente</th><th>Reporte</th><th>Factura</th><th>Total</th></tr></thead><tbody>${archived.map(s=>`<tr class="clickable" data-service="${s.id}"><td class="mono">${h(jobNo(qsvc(s)))}</td><td>${h(s.ship)}</td><td>${h(s.client)}</td><td>${s.reportSent?"Enviado":"Pendiente"}</td><td>${s.invoiced?"Enviada":"Pendiente"}</td><td class="money">${money.format(invoiceAmount(s))}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">Sin expedientes facturados o cerrados.</td></tr>'}</tbody></table></div></div>`;
+}
+const baseQuoteEditCompact=quoteEdit;
+quoteEdit=function(id){
+  const q=state.quotes.find(x=>x.id===id);if(!q)return;
+  baseQuoteEditCompact(id);
+  const btn=document.querySelector('[data-action="save-quote"]');
+  if(btn)btn.insertAdjacentHTML("beforebegin",`<label style="margin-top:12px">Motivo ganada/perdida<input id="editLossReason" value="${h(q.lossReason||q.note||"")}"></label>`);
+}
+const baseSaveQuoteEditCompact=saveQuoteEdit;
+saveQuoteEdit=function(id){
+  const q=state.quotes.find(x=>x.id===id);
+  if(q&&$("#editLossReason"))q.lossReason=$("#editLossReason").value;
+  baseSaveQuoteEditCompact(id);
+}
+compactMenu();
+render();
 </script>
 </body>
 </html>
