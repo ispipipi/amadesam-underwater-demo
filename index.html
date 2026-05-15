@@ -179,6 +179,49 @@ saveQuoteEdit=function(id){
   if(q&&$("#editLossReason"))q.lossReason=$("#editLossReason").value;
   baseSaveQuoteEditCompact(id);
 }
+function calState(x){
+  if(x.invoiced)return"invoiced";
+  if(x.status==="cancelled")return"cancelled";
+  if(x.status==="closed")return"closed";
+  if(x.status==="report")return"report";
+  if(x.status==="progress")return"progress";
+  if(x.status==="confirmed")return"confirmed";
+  return"quoted";
+}
+function calStateLabel(st){
+  return{quoted:"Cotizado",confirmed:"Ganado",progress:"En operacion",report:"Reporte",closed:"Cerrado",cancelled:"Perdido / cancelado",invoiced:"Facturado"}[st]||label(st);
+}
+function calColor(st){
+  return{quoted:"#f59e0b",confirmed:"#10b981",progress:"#087ea4",report:"#7c3aed",closed:"#0f766e",cancelled:"#ef4444",invoiced:"#065f46"}[st]||"#087ea4";
+}
+calEvents=function(status="all"){
+  const withSvc=new Set(state.services.map(s=>s.quoteId).filter(Boolean));
+  const rows=[
+    ...state.services.map(s=>{const q=qsvc(s);return{kind:"service",id:s.id,date:String(s.eta||q.eta).slice(0,10),time:String(s.eta||"").slice(11,16),ship:s.ship,client:s.client,status:s.status,invoiced:!!s.invoiced,meta:`${calStateLabel(calState({status:s.status,invoiced:s.invoiced}))} · Equipo ${s.team||"-"} · ${s.opStage||"Expediente abierto"}`}}),
+    ...state.quotes.filter(q=>!withSvc.has(q.id)).map(q=>({kind:"quote",id:q.id,date:q.eta,time:"",ship:q.ship,client:q.client,status:q.status,invoiced:false,meta:`${calStateLabel(calState(q))} · ${q.requestType==="availability"?"Disponibilidad":"Cotizacion"}`}))
+  ].map(e=>({...e,calStatus:calState(e)}));
+  return rows.filter(e=>status==="all"||e.calStatus===status).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+}
+calDay=function(date,events){
+  const iso=date.toISOString().slice(0,10),items=events.filter(e=>e.date===iso),lbl=date.toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"});
+  return`<div class="day"><div class="day-head"><span>${h(lbl)}</span><span>${items.length}</span></div>${items.map(e=>`<div class="chip" ${e.kind==="service"?`data-service="${e.id}"`:`data-quote="${e.id}"`} style="border-left-color:${calColor(e.calStatus)};background:${e.calStatus==="cancelled"?"#fff1f1":e.calStatus==="invoiced"?"#eefbf4":"white"}"><strong>${h(e.ship)}${e.time?" · "+h(e.time):""}</strong><span>${h(e.client)} · ${h(e.meta)}</span></div>`).join("")||'<div class="muted" style="font-size:12px;margin-top:12px">Sin movimientos</div>'}</div>`;
+}
+weekCal=function(opts={}){
+  const c=calCfg(),mode=opts.mode||c.mode,status=opts.status||c.status,year=+(opts.year||c.year),month=+(opts.month||c.month),weekOffset=+((opts.weekOffset??c.weekOffset)||0),events=calEvents(status);
+  if(mode==="year")return`<div class="grid four">${Array.from({length:12},(_,m)=>{const monthEvents=events.filter(e=>{const d=new Date(e.date);return d.getFullYear()===year&&d.getMonth()===m});return`<div class="card"><div class="section"><div><h3>${h(new Date(year,m,1).toLocaleDateString("es-ES",{month:"long"}))}</h3><p>${monthEvents.length} barcos</p></div></div>${monthEvents.slice(0,7).map(e=>`<div class="chip" ${e.kind==="service"?`data-service="${e.id}"`:`data-quote="${e.id}"`} style="border-left-color:${calColor(e.calStatus)}"><strong>${h(e.ship)} · ${h(e.date.slice(8,10))}</strong><span>${h(e.client)} · ${h(calStateLabel(e.calStatus))}</span></div>`).join("")||'<div class="empty">Sin movimientos</div>'}</div>`}).join("")}</div>`;
+  const days=mode==="month"?Array.from({length:new Date(year,month,0).getDate()},(_,i)=>new Date(year,month-1,i+1)):Array.from({length:7},(_,i)=>{let d=new Date(today);d.setDate(today.getDate()+weekOffset*7+i);return d});
+  return`<div class="calendar">${days.map(d=>calDay(d,events)).join("")}</div>`;
+}
+opsCalendar=function(){
+  const c=calCfg(),sts=["all","quoted","confirmed","progress","report","closed","cancelled","invoiced"],months=Array.from({length:12},(_,i)=>[i+1,new Date(2025,i,1).toLocaleDateString("es-ES",{month:"long"})]);
+  return`<div class="panel"><div class="section"><div><h3>Calendario general de barcos</h3><p>Todos los estados: cotizados, ganados, perdidos, cancelados, cerrados y facturados. Click en un barco para abrir su expediente.</p></div><div class="toolbar"><button class="btn" onclick="calendarMove(-1)">Anterior</button><button class="btn" onclick="calendarMove(1)">Siguiente</button></div></div><div class="toolbar"><select id="calMode" onchange="calendarSet()" style="max-width:180px"><option value="week" ${c.mode==="week"?"selected":""}>Semana</option><option value="month" ${c.mode==="month"?"selected":""}>Mes</option><option value="year" ${c.mode==="year"?"selected":""}>Año</option></select><select id="calStatus" onchange="calendarSet()" style="max-width:220px">${sts.map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${s==="all"?"Todos los estados":calStateLabel(s)}</option>`).join("")}</select><select id="calMonth" onchange="calendarSet()" style="max-width:180px">${months.map(([n,l])=>`<option value="${n}" ${+c.month===n?"selected":""}>${h(l)}</option>`).join("")}</select><input id="calYear" type="number" value="${h(c.year)}" onchange="calendarSet()" style="max-width:120px"></div><div class="toolbar"><span class="badge quoted">Cotizado</span><span class="badge confirmed">Ganado</span><span class="badge progress">En operacion</span><span class="badge report">Reporte</span><span class="badge closed">Facturado / cerrado</span><span class="badge cancelled">Perdido / cancelado</span></div>${weekCal(c)}</div>`;
+}
+quotes=function(){
+  const clients=["all",...state.clients.map(c=>c.name)],sts=["all","quoted","confirmed","progress","report"];
+  if(!sts.includes(state.filters.status))state.filters.status="all";
+  const rows=filteredQuotes();
+  return`${opsCalendar()}<div class="panel" style="margin-top:14px"><div class="section"><div><h3>Expedientes vivos</h3><p>Solo lo que requiere gestion operacional. Lo facturado o cerrado vive en Registros.</p></div></div><div class="toolbar"><input id="filterText" placeholder="Buscar barco, cliente o JN" value="${h(state.filters.text)}" style="max-width:280px"><select id="filterStatus" style="max-width:210px">${sts.map(s=>`<option value="${s}" ${state.filters.status===s?"selected":""}>${s==="all"?"Todos los estados vivos":label(s)}</option>`).join("")}</select><select id="filterClient" style="max-width:210px">${clients.map(c=>`<option value="${h(c)}" ${state.filters.client===c?"selected":""}>${c==="all"?"Todos los clientes":h(c)}</option>`).join("")}</select><button class="btn" data-action="clear-filters">Limpiar</button></div>${quotesTable(rows)}</div>`;
+}
 compactMenu();
 render();
 </script>
