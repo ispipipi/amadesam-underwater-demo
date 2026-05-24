@@ -280,6 +280,116 @@ act=function(e,el){
   }
   baseActOwner(e,el);
 }
+function ensureUwStatusCss(){
+  if(document.getElementById("uwStatusCss"))return;
+  document.head.insertAdjacentHTML("beforeend",`<style id="uwStatusCss">
+    .uw-legend{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+    .uw-status-badge{display:inline-flex;align-items:center;gap:6px;min-height:25px;border-radius:7px;padding:5px 8px;border:2px solid currentColor;font-size:11px;font-weight:950;line-height:1;color:#fff}
+    .uw-status-code{display:inline-grid;place-items:center;min-width:30px;height:18px;border-radius:5px;background:rgba(255,255,255,.94);color:#0f172a;font-family:var(--mono);font-size:10px;font-weight:950}
+    .uw-cal-chip{border-left-width:8px!important;border-top-width:2px!important;border-right-width:2px!important;border-bottom-width:2px!important;color:#fff;box-shadow:none}
+    .uw-cal-chip strong,.uw-cal-chip span{color:#fff}.uw-cal-chip .uw-status-code{margin-right:6px}
+    .uw-cal-quoted,.uw-status-quoted{background:#f6bd16!important;border-color:#9a6700!important;color:#0f172a!important}.uw-cal-quoted strong,.uw-cal-quoted span{color:#0f172a}.uw-status-quoted{color:#0f172a!important}
+    .uw-cal-confirmed,.uw-status-confirmed{background:#23a86b!important;border-color:#0b6b43!important}
+    .uw-cal-progress,.uw-status-progress{background:#1689d5!important;border-color:#075985!important}
+    .uw-cal-report,.uw-status-report,.uw-cal-invoiced,.uw-status-invoiced{background:#086b4f!important;border-color:#064e3b!important;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 8px,transparent 8px 16px)!important}
+    .uw-cal-closed,.uw-status-closed{background:#7b1fb0!important;border-color:#4c0d73!important}
+    .uw-cal-cancelled,.uw-status-cancelled{background:#e53935!important;border-color:#991b1b!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 7px,transparent 7px 14px)!important}
+    .uw-cal-chip:hover{filter:brightness(.96);transform:translateY(-1px)}
+  </style>`);
+}
+const uwStatusMeta={
+  quoted:["COT","Cotizacion enviada"],
+  pending:["COT","Cotizacion enviada"],
+  confirmed:["CNF","Confirmado"],
+  progress:["OP","En operacion"],
+  report:["RPT","Trabajo hecho / report"],
+  invoiced:["PRE","Report / pre-factura"],
+  closed:["CER","Caso cerrado"],
+  cancelled:["CAN","Cancelado"]
+};
+label=function(st){return(uwStatusMeta[st]||["",st])[1]}
+badge=function(st){const key=cls(st),m=uwStatusMeta[key]||["--",label(st)];return`<span class="uw-status-badge uw-status-${key}"><span class="uw-status-code">${m[0]}</span>${m[1]}</span>`}
+calState=function(x){
+  if(x.status==="cancelled")return"cancelled";
+  if(x.status==="closed")return"closed";
+  if(x.status==="report"||x.invoiced)return"report";
+  if(x.status==="progress")return"progress";
+  if(x.status==="confirmed")return"confirmed";
+  return"quoted";
+}
+calStateLabel=function(st){return(uwStatusMeta[st]||["",label(st)])[1]}
+calColor=function(st){return{quoted:"#f6bd16",confirmed:"#23a86b",progress:"#1689d5",report:"#086b4f",closed:"#7b1fb0",cancelled:"#e53935",invoiced:"#086b4f"}[st]||"#1689d5"}
+function uwStatusLegend(){
+  return`<div class="uw-legend">${["confirmed","cancelled","quoted","report","closed"].map(st=>badge(st)).join("")}</div>`;
+}
+calDay=function(date,events){
+  const iso=date.toISOString().slice(0,10),items=events.filter(e=>e.date===iso),lbl=date.toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"});
+  return`<div class="day"><div class="day-head"><span>${h(lbl)}</span><span>${items.length}</span></div>${items.map(e=>{const st=e.calStatus||calState(e),m=uwStatusMeta[st]||["--",calStateLabel(st)];return`<div class="chip uw-cal-chip uw-cal-${st}" ${e.kind==="service"?`data-service="${e.id}"`:`data-quote="${e.id}"`}><strong><span class="uw-status-code">${m[0]}</span>${h(e.ship)}${e.time?" · "+h(e.time):""}</strong><span>${h(e.client)} · ${h(e.meta||m[1])}</span></div>`}).join("")||'<div class="muted" style="font-size:12px;margin-top:12px">Sin movimientos</div>'}</div>`;
+}
+opsCalendar=function(){
+  const c=calCfg(),sts=["all","quoted","confirmed","progress","report","closed","cancelled"],months=Array.from({length:12},(_,i)=>[i+1,new Date(2025,i,1).toLocaleDateString("es-ES",{month:"long"})]);
+  return`<div class="panel"><div class="section"><div><h3>Calendario general de barcos</h3><p>Estados reforzados con codigo, contraste y textura para distinguirlos sin depender solo del color.</p>${uwStatusLegend()}</div><div class="toolbar"><button class="btn" onclick="calendarMove(-1)">Anterior</button><button class="btn" onclick="calendarMove(1)">Siguiente</button></div></div><div class="toolbar"><select id="calMode" onchange="calendarSet()" style="max-width:180px"><option value="week" ${c.mode==="week"?"selected":""}>Semana</option><option value="month" ${c.mode==="month"?"selected":""}>Mes</option><option value="year" ${c.mode==="year"?"selected":""}>Año</option></select><select id="calStatus" onchange="calendarSet()" style="max-width:220px">${sts.map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${s==="all"?"Todos los estados":calStateLabel(s)}</option>`).join("")}</select><select id="calMonth" onchange="calendarSet()" style="max-width:180px">${months.map(([n,l])=>`<option value="${n}" ${+c.month===n?"selected":""}>${h(l)}</option>`).join("")}</select><input id="calYear" type="number" value="${h(c.year)}" onchange="calendarSet()" style="max-width:120px"></div>${weekCal(c)}</div>`;
+}
+function closeModal(){$("#modalBg").classList.remove("open")}
+function closeDrawer(){$("#drawerBg").classList.remove("open")}
+closeAll=function(){
+  const modalOpen=$("#modalBg").classList.contains("open"),drawerOpen=$("#drawerBg").classList.contains("open");
+  if(modalOpen&&drawerOpen){closeModal();return}
+  closeModal();closeDrawer();
+}
+function refreshCase(q){
+  save();render();
+  if(q?.id)quoteDetail(q.id);
+}
+function syncQuoteService(q,status){
+  if(!q)return null;
+  const s=caseSvc(q);
+  q.status=status;s.status=status;
+  if(status==="report"){s.reportSent=true;s.opStage=s.opStage==="Completado"?s.opStage:"Completado"}
+  if(status==="closed"){s.reportSent=true;s.invoiced=true;s.opStage="Cerrado"}
+  if(status==="cancelled")s.opStage="Cancelado";
+  q.lastAction="Estado cambiado a "+label(status);
+  q.log=q.log||[];q.log.push(q.lastAction);
+  return s;
+}
+const baseActUwOps=act;
+act=function(e,el){
+  const a=el?.dataset?.action;
+  if(a==="set-case-status"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),status=$("#caseStatus")?.value;
+    syncQuoteService(q,status);refreshCase(q);toast("Estado actualizado y sincronizado con calendario");return;
+  }
+  if(a==="send-email"){
+    e.stopPropagation();
+    const s=state.services.find(x=>x.id===el.dataset.id),q=state.quotes.find(x=>x.id===el.dataset.id)||qsvc(s||{}),kind=el.dataset.kind;
+    if(kind==="report"&&s){s.reportSent=true;syncQuoteService(q,"report")}
+    if(kind==="completed"&&s){s.opStage="Completado";syncQuoteService(q,"report")}
+    if(kind==="commence"&&s){s.opStage="Buzo en agua";syncQuoteService(q,"progress")}
+    if(q?.id){q.log=q.log||[];q.log.push("Email sent: "+kind)}
+    closeModal();save();
+    if($("#drawerBg").classList.contains("open")&&q?.id)refreshCase(q);else render();
+    toast("Email enviado y calendario actualizado");return;
+  }
+  if(a==="issue-invoice"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),s=syncQuoteService(q,"report");
+    if(s){s.invoiced=true;s.reportSent=true}
+    save();render();if(q?.id){quoteDetail(q.id);email("invoice",q.id)}return;
+  }
+  if(a==="close-case"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id);syncQuoteService(q,"closed");save();closeDrawer();render();toast("Expediente cerrado y calendario actualizado");return;
+  }
+  if(a==="save-quote"){
+    e.stopPropagation();
+    saveQuoteEdit(el.dataset.id);
+    const q=state.quotes.find(x=>x.id===el.dataset.id);
+    closeModal();if(q?.id)refreshCase(q);return;
+  }
+  baseActUwOps(e,el);
+}
+ensureUwStatusCss();
 compactMenu();
 render();
 
