@@ -226,6 +226,60 @@ quotes=function(){
   const rows=filteredQuotes();
   return`${opsCalendar()}<div class="panel" style="margin-top:14px"><div class="section"><div><h3>Expedientes vivos</h3><p>Solo lo que requiere gestion operacional. Lo facturado o cerrado vive en Registros.</p></div></div><div class="toolbar"><input id="filterText" placeholder="Buscar barco, cliente o JN" value="${h(state.filters.text)}" style="max-width:280px"><select id="filterStatus" style="max-width:210px">${sts.map(s=>`<option value="${s}" ${state.filters.status===s?"selected":""}>${s==="all"?"Todos los estados vivos":label(s)}</option>`).join("")}</select><select id="filterClient" style="max-width:210px">${clients.map(c=>`<option value="${h(c)}" ${state.filters.client===c?"selected":""}>${c==="all"?"Todos los clientes":h(c)}</option>`).join("")}</select><button class="btn" data-action="clear-filters">Limpiar</button></div>${quotesTable(rows)}</div>`;
 }
+function ownerAccessOk(){return sessionStorage.getItem("amadesam-owner-access")==="1"}
+function ownerGate(){
+  return`<div class="panel"><div class="section"><div><h3>Registros restringidos</h3><p>Acceso reservado para propietario. Esta vista concentra el historial financiero y operativo.</p></div><span class="badge cancelled">Restringido</span></div><div class="grid two"><div class="card"><h3>Control de acceso</h3><p class="muted">Introduce la clave de propietario para consultar cotizaciones ganadas/perdidas e historial facturado.</p><label style="margin-top:12px">Clave propietario<input id="ownerPin" type="password" placeholder="Clave"></label><div class="toolbar"><button class="btn primary" data-action="owner-unlock">Ingresar</button></div></div><div class="card"><h3>Contenido protegido</h3><div class="chip"><strong>Registro de cotizaciones</strong><span>Ganadas, perdidas y motivo conocido.</span></div><div class="chip"><strong>Historial de expedientes</strong><span>Servicios cerrados, facturados y trazabilidad final.</span></div></div></div></div>`;
+}
+const baseHistorySecure=history;
+history=function(){return ownerAccessOk()?baseHistorySecure():ownerGate()}
+dashboard=function(){
+  const pending=state.quotes.filter(q=>q.status==="quoted").length,
+    conf=state.services.filter(s=>s.status==="confirmed").length,
+    week=state.services.filter(s=>daysUntil(s.eta)>=-1&&daysUntil(s.eta)<=7).length,
+    inv=state.services.filter(s=>s.reportSent&&!s.invoiced).length;
+  return`<div class="grid four">${metric("Cotizaciones pendientes",pending,"quoted","Seguimiento comercial activo","followup")}${metric("Servicios confirmados",conf,"confirmed","Expedientes nominados","confirmed")}${metric("Servicios esta semana",week,"report","Plan operativo Lun-Dom","ops-calendar")}${metric("Facturacion pendiente",inv,"pending","Reporte enviado sin factura","invoice-pending")}</div><div class="grid two" style="margin-top:14px"><div class="panel"><div class="section"><div><h3>VesselFinder · Puerto de Algeciras</h3><p>Vista AIS embebida centrada en terminales, fondeo y trafico portuario.</p></div><button class="btn" onclick="toast('Vista VesselFinder actualizada')">Refrescar</button></div>${portMap()}</div><div class="panel"><div class="section"><div><h3>Alertas SLA</h3><p>Los permisos se gestionan dentro de cada expediente para evitar duplicidad operativa.</p></div></div><div class="grid">${state.services.filter(s=>s.status!=="closed").map(s=>`<div class="alert ${daysUntil(s.eta)<=state.params.slaDays&&s.permit!=="Aprobado"?"danger":""}"><strong>${h(s.ship)}</strong> · ${h(s.permit||"Pendiente")}<br>ETA ${String(s.eta).slice(0,10)} · abrir expediente para revisar tramites.</div>`).join("")}</div></div></div><div class="panel" style="margin-top:14px"><div class="section"><div><h3>Calendario semanal</h3><p>Click en una card para abrir detalle.</p></div><button class="btn primary" data-nav-short="ops-calendar">Abrir calendario</button></div>${weekCal({mode:"week",status:"all",weekOffset:0})}</div><div class="panel" style="margin-top:14px"><div class="section"><div><h3>Servicios activos</h3><p>Estado operativo, permisos y compatibilidad.</p></div><button class="btn primary" data-nav-short="active">Gestionar activos</button></div>${servicesTable(state.services.filter(s=>s.status!=="closed"))}</div>`;
+}
+servicesTable=function(ss){
+  if(!ss.length)return'<div class="empty">No hay expedientes para mostrar.</div>';
+  return`<table><thead><tr><th>JN</th><th>Expediente</th><th>ETA</th><th>Permiso</th><th>Estado</th><th>Accion</th></tr></thead><tbody>${ss.map(s=>`<tr class="clickable" data-service="${s.id}"><td class="mono">${h(s.jobNo||jobNo(qsvc(s)))}</td><td><strong>${h(s.ship)}</strong><br><span class="muted">${h(s.client)} · ${h((qsvc(s).services||[]).join(", "))}</span></td><td class="mono">${h(String(s.eta).replace("T"," "))}</td><td>${h(s.permit||"Pendiente")}</td><td>${badge(s.status)}</td><td><button class="btn" data-action="service-detail" data-id="${s.id}">Abrir expediente</button></td></tr>`).join("")}</tbody></table>`;
+}
+calEvents=function(status="all"){
+  const withSvc=new Set(state.services.map(s=>s.quoteId).filter(Boolean));
+  const rows=[
+    ...state.services.map(s=>{const q=qsvc(s);return{kind:"service",id:s.id,date:String(s.eta||q.eta).slice(0,10),time:String(s.eta||"").slice(11,16),ship:s.ship,client:s.client,status:s.status,invoiced:!!s.invoiced,meta:`${calStateLabel(calState({status:s.status,invoiced:s.invoiced}))} · ${s.opStage||"Expediente abierto"}`}}),
+    ...state.quotes.filter(q=>!withSvc.has(q.id)).map(q=>({kind:"quote",id:q.id,date:q.eta,time:"",ship:q.ship,client:q.client,status:q.status,invoiced:false,meta:`${calStateLabel(calState(q))} · ${q.requestType==="availability"?"Disponibilidad":"Cotizacion"}`}))
+  ].map(e=>({...e,calStatus:calState(e)}));
+  return rows.filter(e=>status==="all"||e.calStatus===status).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+}
+function permitStepsHtml(q,s){
+  const sent=!!s.prearrivalSent,approved=s.permit==="Aprobado",budget=/Presupuesto/i.test(s.permit||"");
+  const steps=[
+    ["Documentacion pre-arribo",sent],
+    ["Solicitud DockRP / autoridad portuaria",sent||approved||budget],
+    ["Notificacion Capitania",sent||approved||budget],
+    ["Antifouling y certificados",sent||approved||budget],
+    ["Presupuesto subido",budget],
+    ["Permiso aprobado",approved]
+  ];
+  return`<div class="card" style="margin-top:12px"><div class="section"><div><h3>Tramites del expediente</h3><p>Orden operativo centralizado en el buque para no duplicarlo en Dashboard.</p></div><span class="badge ${approved?"confirmed":"quoted"}">${h(s.permit||"Pendiente")}</span></div><div class="stage-grid" style="grid-template-columns:repeat(6,1fr)">${steps.map(([t,on])=>`<div class="stage ${on?"active":""}">${h(t)}</div>`).join("")}</div></div>`;
+}
+caseHtml=function(q,s){
+  s=s||caseSvc(q);
+  const stages=["quoted","confirmed","progress","report","closed","cancelled"];
+  return`<div class="section"><div><h3>Expediente ${h(jobNo(q))} · ${h(q.ship)}</h3><p>${h(q.client)} · ETA ${h(q.eta)} · ETS ${h(q.ets||"Pendiente")} · ${q.requestType==="availability"?"Disponibilidad":"Cotizacion"}</p></div><button class="btn" onclick="closeAll()">X</button></div>${badge(q.status)}<div class="grid two" style="margin-top:12px"><div class="card"><h3>Resumen operativo</h3><p><strong>Servicios:</strong> ${h((q.services||[]).join(", ")||"Pendiente")}</p><p><strong>Permiso:</strong> ${h(s.permit||"Pendiente")}</p><p><strong>Gabarra:</strong> ${h(s.barge)} · <strong>Etapa:</strong> ${h(s.opStage)}</p><p><strong>ETA/ETS:</strong> ${h(q.eta)} / ${h(q.ets||"Pendiente")}</p></div><div class="card"><h3>Lo cotizado</h3>${quotedHtml(q)}</div></div>${permitStepsHtml(q,s)}<div class="card" style="margin-top:12px"><div class="section"><div><h3>Estado de la operativa</h3><p>Diagrama vivo del expediente y accesos de ejecucion.</p></div></div>${opsDiagram(q,s)}<div class="toolbar"><button class="btn primary" data-action="email" data-kind="${q.requestType==="availability"?"availability":"quotation"}" data-id="${q.id}">${q.requestType==="availability"?"Enviar disponibilidad":"Enviar cotizacion"}</button><button class="btn" data-action="edit-quote" data-id="${q.id}">Editar cotizacion</button><button class="btn good" data-action="confirm" data-id="${q.id}">Nominar / confirmar</button><button class="btn" data-action="email" data-kind="agent" data-id="${q.id}">Mail agente</button><button class="btn" data-action="email" data-kind="prearrival" data-id="${q.id}">Pre-arrival Master</button><button class="btn" data-action="email" data-kind="port" data-id="${q.id}">Capitania AF</button><button class="btn" data-action="email" data-kind="arrival" data-id="${q.id}">Arrival instructions</button><button class="btn primary" data-action="email" data-kind="commence" data-id="${s.id}">Commenced</button><button class="btn good" data-action="email" data-kind="completed" data-id="${s.id}">Completed</button><button class="btn" data-action="email" data-kind="report" data-id="${s.id}">Final report</button><button class="btn warn" data-action="issue-invoice" data-id="${q.id}">Emitir factura</button><button class="btn red" data-action="close-case" data-id="${q.id}">Cerrar expediente</button></div><div class="row"><label>Cambiar estado<select id="caseStatus">${stages.map(st=>`<option value="${st}" ${q.status===st?"selected":""}>${label(st)}</option>`).join("")}</select></label><label>Actualizar<button class="btn primary" data-action="set-case-status" data-id="${q.id}">Guardar estado</button></label></div></div><div class="grid two" style="margin-top:12px"><div class="card"><h3>Lector OCR / cambios</h3><label>Texto OCR, email o instruccion<textarea id="ocrText">ETA ${h(q.eta)} / ETS ${h(q.ets||"2025-05-29")} - ${h(q.ship)} confirmed alongside Algeciras. Please update operation window.</textarea></label><div class="toolbar"><button class="btn primary" data-action="run-ocr" data-id="${q.id}">Analizar OCR</button></div><div id="ocrResult"></div></div><div class="card"><h3>Documentos y equipos</h3>${caseDocs.map(x=>`<div class="chip"><strong>${h(x)}</strong><span>Adjunto requerido</span></div>`).join("")}${equipmentNotes.map(x=>`<div class="chip"><strong>${h(x)}</strong></div>`).join("")}</div></div><h3 style="margin-top:14px">Log</h3><table><tbody>${(q.log||[]).map(x=>`<tr><td>${h(x)}</td></tr>`).join("")}</tbody></table>`;
+}
+const baseActOwner=act;
+act=function(e,el){
+  const a=el?.dataset?.action;
+  if(a==="owner-unlock"){
+    e.stopPropagation();
+    const pin=($("#ownerPin")?.value||"").trim();
+    if(pin==="AMADESAM"){sessionStorage.setItem("amadesam-owner-access","1");toast("Acceso propietario concedido");render()}
+    else toast("Clave no valida");
+    return;
+  }
+  baseActOwner(e,el);
+}
 compactMenu();
 render();
 
