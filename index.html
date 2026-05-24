@@ -390,6 +390,145 @@ act=function(e,el){
   baseActUwOps(e,el);
 }
 ensureUwStatusCss();
+function ensureUwWorkflowCss(){
+  if(document.getElementById("uwWorkflowCss"))return;
+  document.head.insertAdjacentHTML("beforeend",`<style id="uwWorkflowCss">
+    .uw-flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+    .uw-flow-step{display:grid;grid-template-columns:32px 1fr;gap:9px;align-items:start;border:1px solid var(--line);border-radius:8px;background:#f8fbfc;padding:10px;text-align:left;color:var(--text)}
+    .uw-flow-step:hover{border-color:var(--sea);background:#f2fafc}
+    .uw-flow-step.done{border-color:#0b6b43;background:#ecfdf5}
+    .uw-flow-box{width:26px;height:26px;border:2px solid #7a91a1;border-radius:7px;background:white;display:grid;place-items:center;font-weight:950;color:transparent}
+    .uw-flow-step.done .uw-flow-box{background:#0b6b43;border-color:#0b6b43;color:white}
+    .uw-flow-step strong{display:block;font-size:12px;line-height:1.25}.uw-flow-step span{display:block;color:var(--muted);font-size:11px;line-height:1.3;margin-top:3px}
+    .quote-fixed{display:inline-flex;align-items:center;border:1px solid #f7c85d;background:#fff7e8;color:#8a5a00;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:950}
+  </style>`);
+}
+const workflowSteps=[
+  ["quoteSent","Cotizacion enviada","Primer paso comercial antes de la confirmacion."],
+  ["prearrival","Pre arrival Master","Mail al capitan tras confirmacion del servicio."],
+  ["agentNomination","Mail agencia nominacion","Aviso al agente; puede incluir RP si la fecha esta cercana."],
+  ["afReceived","AF recibido","Antifouling solicitado al Master y recibido."],
+  ["rpAgent","RP al agente","Envio de RP al agente, junto a nominacion o en correo posterior."],
+  ["capitania","Notificacion + AF Capitania","Puede enviarse solo notificacion si no hay limpieza."],
+  ["budgetUploaded","Presupuesto subido","Se sube cuando agencia carga el RP en plataforma."],
+  ["permitsApproved","Permisos aprobados","Cuando la plataforma queda en pendiente factura."],
+  ["arrival","Arrival instructions","Instrucciones al capitan 12/24h antes de llegada."],
+  ["commenced","Commenced ops","Buzo en agua y aviso enviado."],
+  ["completed","Completed ops","Trabajos terminados."],
+  ["finalReport","Final report","Reporte buzos editado y enviado."],
+  ["preInvoice","Pre-factura","Solicitud/pre-factura lista para administracion."]
+];
+function workflowChecks(q,s){
+  q.workflow=q.workflow||{};
+  const checks={...q.workflow};
+  if(q.status)checks.quoteSent=true;
+  if(s.prearrivalSent)checks.prearrival=true;
+  if(/pre-arrival/i.test((q.log||[]).join(" ")))checks.prearrival=true;
+  if(/agent|nomin/i.test((q.log||[]).join(" ")))checks.agentNomination=true;
+  if(/port|capitania/i.test((q.log||[]).join(" ")))checks.capitania=true;
+  if(/arrival/i.test((q.log||[]).join(" ")))checks.arrival=true;
+  if(s.permit==="Aprobado")checks.permitsApproved=true;
+  if(/Presupuesto/i.test(s.permit||""))checks.budgetUploaded=true;
+  if(s.opStage==="Buzo en agua"||["progress","report","closed"].includes(s.status))checks.commenced=true;
+  if(s.opStage==="Completado"||["report","closed"].includes(s.status))checks.completed=true;
+  if(s.reportSent||["report","closed"].includes(s.status))checks.finalReport=true;
+  if(s.invoiced||q.status==="closed")checks.preInvoice=true;
+  q.workflow=checks;
+  return checks;
+}
+function markWorkflow(q,steps,on=true){
+  if(!q)return;
+  q.workflow=q.workflow||{};
+  [].concat(steps).forEach(step=>q.workflow[step]=on);
+}
+function workflowHtml(q,s){
+  const checks=workflowChecks(q,s),done=workflowSteps.filter(([id])=>checks[id]).length;
+  return`<div class="card" style="margin-top:12px"><div class="section"><div><h3>Flujo operativo del expediente</h3><p>${done}/${workflowSteps.length} gestiones marcadas. Puedes marcar o desmarcar manualmente porque el orden real puede variar.</p></div>${badge(q.status)}</div><div class="uw-flow-grid">${workflowSteps.map(([id,title,desc])=>`<button class="uw-flow-step ${checks[id]?"done":""}" data-action="toggle-workflow-step" data-id="${q.id}" data-step="${id}"><span class="uw-flow-box">${checks[id]?"✓":""}</span><span><strong>${h(title)}</strong><span>${h(desc)}</span></span></button>`).join("")}</div></div>`;
+}
+quotedHtml=function(q){
+  const unit=Math.round((q.amount||0)/Math.max((q.services||[]).length,1));
+  return`<table><thead><tr><th>Servicio cotizado</th><th>Importe</th><th>Condicion</th></tr></thead><tbody>${(q.services||[]).map(x=>`<tr><td>${h(x)}</td><td class="money">${money.format(unit)}</td><td>Incluye buzos, equipo, embarcacion y reporte fotografico</td></tr>`).join("")}</tbody></table><div class="section" style="margin-top:10px"><div><p class="muted">Total cotizado</p><h3 class="money">${money.format(q.amount||0)}</h3></div><span class="quote-fixed">Cotizacion enviada</span></div>`;
+}
+emailBody=function(kind,q,s){
+  const ship=q?.ship||s?.ship||"[ship]",svc=(q?.services||qsvc(s||{}).services||[]).join(", ");
+  if(kind==="availability")return`Dear team,\nGood day,\n\nWe confirm availability on ETA mentioned for ${ship}. Proposed scope: ${svc}.\n\nAvailability remains subject to final ETA/berth confirmation, DockRP permit window and bunkering compatibility.\n\nMany thanks for your valued enquiry.\nAMADESAM Operations.`;
+  if(kind==="quotation")return`Dear team,\nGood day,\n\nPlease find attached our best quotation, as requested. Services quoted: ${svc}. Total amount: ${money.format(q.amount||0)}.\n\nDivers, equipment, workboat and final report with photos are included in the prices, working hrs 24/7.\n\nWe remain at your disposal for anything you may need.\nMany thanks.`;
+  if(kind==="agent")return`Buenos dias,\n\nPor favor anoten hemos sido nominados para realizar trabajos submarinos al buque ${ship}.\nRogamos actualicen perspectivas. Volvemos con doc RP.\n\nMuchas gracias.`;
+  if(kind==="port")return`Buenos dias,\n\nRogamos encuentren adjunto notificacion y Antifouling del buque ${ship}.\n\nGracias de antemano.\nca-cmd-algeciras-geas@guardiacivil.org; mmpp.algeciras@mitma.es`;
+  if(kind==="prearrival")return`Dear team,\nGood day,\n\nSo glad to receive your confirmation, please forward the following message and attached files to the Master and await his response.\n\nDear Master,\nPlease note that as part of our safety procedures, our dive team will not come onboard. Please find attached toolbox meeting requirements, Divers at Work sign, VHF 71 safety notice, VAT exemption declaration and the Pre-Diving Safety Checklist.\n\nWe also require Certificate of Registry, VAT exemption filled in, and International Antifouling System Certificate with records.\n\nOur dive team shall contact you on VHF Channel 71. It is IMPERATIVE that the vessel duty officer monitors VHF CH71 at all times for diver safety.\n\nAwaiting your info.`;
+  if(kind==="commence")return`Dear team,\nGood day,\n\nPlease note as follows for ${ship}:\nHrs - Diving boat alongside\nHrs - Commenced UW ops\n\nWe will keep you duly posted.\nMany thanks.`;
+  if(kind==="completed")return`Dear team,\n\nTo inform that we have successfully completed the underwater operations for ${ship}.\nKindly find attached our worksheet.\n\nHrs - Diving support vessel alongside\nHrs - Commenced\nHrs - Completed\nHrs - Cast off\n\nWe will be reverting with the final report and invoice in due time.\nMany thanks.`;
+  if(kind==="arrival")return`Dear team,\nGood day,\n\nKindly forward the following reminder to the Master and await confirmation of receipt and understanding.\n\nDear Master,\nOnce you receive confirmation from Algeciras Port Control to proceed to pilot boarding area / inner anchorage, please call our duty mobile +34 663 812 453 to mobilize our diving team and avoid delays.\nOur dive team will contact you on VHF Channel 71. Please ensure the duty officer is continuously monitoring VHF CH71 for diver safety.\nPlease confirm receipt and full understanding of these instructions.`;
+  if(kind==="report")return`Dear team,\nGood day,\n\nKindly find attached our final report for ${ship} along with our link with photos.\nPlease confirm safe receipt and that everything is in order.\n\nMany thanks & we remain at your disposal for anything you may need.`;
+  if(kind==="invoice")return`Dear team,\nGood day,\n\nPlease find attached pre-invoice / invoice request for services rendered to ${ship}.\nPlease confirm safe receipt.\n\nMany thanks in advance.`;
+  return`Thank you for your inquiry. We acknowledge receipt of your request for ${ship}.`;
+}
+email=function(kind,id){
+  const s=state.services.find(x=>x.id===id),q=state.quotes.find(x=>x.id===id)||qsvc(s||{});
+  const subjectShip=q.ship||s?.ship||"Vessel";
+  openModal(`<div class="section"><div><h3>Preview email</h3><p>[AMADESAM] ${kind.toUpperCase()} · ${h(subjectShip)}</p></div><button class="btn" onclick="closeAll()">X</button></div><label>Body<textarea>${h(emailBody(kind,q,s))}</textarea></label><div class="toolbar"><button class="btn primary" data-action="send-email" data-kind="${kind}" data-id="${id}">Enviar</button><button class="btn" onclick="closeAll()">Cancelar</button></div>`);
+}
+caseHtml=function(q,s){
+  s=s||caseSvc(q);
+  const stages=["quoted","confirmed","progress","report","closed","cancelled"];
+  return`<div class="section"><div><h3>Expediente ${h(jobNo(q))} · ${h(q.ship)}</h3><p>${h(q.client)} · ETA ${h(q.eta)} · ETS ${h(q.ets||"Pendiente")} · ${q.requestType==="availability"?"Disponibilidad":"Cotizacion"}</p></div><button class="btn" onclick="closeAll()">X</button></div>${badge(q.status)}<div class="grid two" style="margin-top:12px"><div class="card"><h3>Resumen operativo</h3><p><strong>Servicios:</strong> ${h((q.services||[]).join(", ")||"Pendiente")}</p><p><strong>Permiso:</strong> ${h(s.permit||"Pendiente")}</p><p><strong>Gabarra:</strong> ${h(s.barge)} · <strong>Etapa:</strong> ${h(s.opStage)}</p><p><strong>ETA/ETS:</strong> ${h(q.eta)} / ${h(q.ets||"Pendiente")}</p></div><div class="card"><h3>Lo cotizado</h3>${quotedHtml(q)}</div></div>${workflowHtml(q,s)}<div class="card" style="margin-top:12px"><div class="section"><div><h3>Acciones del expediente</h3><p>Ejecuta emails y acciones; las casillas se actualizan automaticamente y tambien pueden corregirse manualmente.</p></div></div><div class="toolbar"><button class="btn primary" data-action="email" data-kind="${q.requestType==="availability"?"availability":"quotation"}" data-id="${q.id}">${q.requestType==="availability"?"Enviar disponibilidad":"Enviar cotizacion"}</button><button class="btn" data-action="edit-quote" data-id="${q.id}">Editar cotizacion</button><button class="btn good" data-action="confirm" data-id="${q.id}">Nominar / confirmar</button><button class="btn" data-action="email" data-kind="prearrival" data-id="${q.id}">Pre arrival Master</button><button class="btn" data-action="email" data-kind="agent" data-id="${q.id}">Mail agencia nominacion</button><button class="btn" data-action="mark-workflow" data-step="afReceived" data-id="${q.id}">AF recibido</button><button class="btn" data-action="mark-workflow" data-step="rpAgent" data-id="${q.id}">RP al agente</button><button class="btn" data-action="email" data-kind="port" data-id="${q.id}">Notificacion + AF Capitania</button><button class="btn" data-action="mark-workflow" data-step="budgetUploaded" data-id="${q.id}">Presupuesto subido</button><button class="btn" data-action="mark-workflow" data-step="permitsApproved" data-id="${q.id}">Permisos aprobados</button><button class="btn" data-action="email" data-kind="arrival" data-id="${q.id}">Arrival instructions</button><button class="btn primary" data-action="email" data-kind="commence" data-id="${s.id}">Commenced ops</button><button class="btn good" data-action="email" data-kind="completed" data-id="${s.id}">Completed ops</button><button class="btn" data-action="email" data-kind="report" data-id="${s.id}">Final report</button><button class="btn warn" data-action="issue-invoice" data-id="${q.id}">Pre-factura</button><button class="btn red" data-action="close-case" data-id="${q.id}">Cerrar expediente</button></div><div class="row"><label>Cambiar estado<select id="caseStatus">${stages.map(st=>`<option value="${st}" ${q.status===st?"selected":""}>${label(st)}</option>`).join("")}</select></label><label>Actualizar<button class="btn primary" data-action="set-case-status" data-id="${q.id}">Guardar estado</button></label></div></div><div class="grid two" style="margin-top:12px"><div class="card"><h3>Lector OCR / cambios</h3><label>Texto OCR, email o instruccion<textarea id="ocrText">ETA ${h(q.eta)} / ETS ${h(q.ets||"2025-05-29")} - ${h(q.ship)} confirmed alongside Algeciras. Please update operation window.</textarea></label><div class="toolbar"><button class="btn primary" data-action="run-ocr" data-id="${q.id}">Analizar OCR</button></div><div id="ocrResult"></div></div><div class="card"><h3>Documentos y equipos</h3>${caseDocs.map(x=>`<div class="chip"><strong>${h(x)}</strong><span>Adjunto requerido</span></div>`).join("")}${equipmentNotes.map(x=>`<div class="chip"><strong>${h(x)}</strong></div>`).join("")}</div></div><h3 style="margin-top:14px">Log</h3><table><tbody>${(q.log||[]).map(x=>`<tr><td>${h(x)}</td></tr>`).join("")}</tbody></table>`;
+}
+const baseActWorkflow=act;
+act=function(e,el){
+  const a=el?.dataset?.action;
+  if(a==="toggle-workflow-step"||a==="mark-workflow"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id);if(!q)return;
+    q.workflow=q.workflow||{};
+    const step=el.dataset.step;
+    q.workflow[step]=a==="mark-workflow"?true:!q.workflow[step];
+    q.log=q.log||[];q.log.push((q.workflow[step]?"Marcado: ":"Desmarcado: ")+((workflowSteps.find(x=>x[0]===step)||[])[1]||step));
+    save();quoteDetail(q.id);toast(q.workflow[step]?"Gestion marcada":"Gestion desmarcada");return;
+  }
+  if(a==="confirm"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),s=caseSvc(q);
+    q.status="confirmed";s.status="confirmed";s.opStage="Nominado / documentacion pendiente";q.lastAction="Servicio confirmado";
+    markWorkflow(q,["quoteSent"]);q.log=q.log||[];q.log.push("Service confirmed / nominated");
+    save();quoteDetail(q.id);toast("Servicio confirmado");return;
+  }
+  if(a==="prearrival-send"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),s=state.services.find(x=>x.id===el.dataset.id)||caseSvc(q||{});
+    if(s){s.prearrivalSent=true;s.opStage="Pre-arrival enviado"}if(q){markWorkflow(q,"prearrival");q.lastAction="Pre-arrival enviado";q.log=q.log||[];q.log.push("Pre-arrival package sent")}
+    save();if(q?.id)quoteDetail(q.id);else render();toast("Pre arrival marcado");return;
+  }
+  if(a==="send-email"){
+    e.stopPropagation();
+    const s=state.services.find(x=>x.id===el.dataset.id),q=state.quotes.find(x=>x.id===el.dataset.id)||qsvc(s||{}),kind=el.dataset.kind;
+    const byKind={quotation:["quoteSent"],availability:["quoteSent"],prearrival:["prearrival"],agent:["agentNomination"],port:["capitania"],arrival:["arrival"],commence:["commenced"],completed:["completed"],report:["finalReport"],invoice:["preInvoice"]};
+    markWorkflow(q,byKind[kind]||[]);
+    if(kind==="prearrival"&&q){caseSvc(q).prearrivalSent=true}
+    if(kind==="report"&&s){s.reportSent=true;syncQuoteService(q,"report");markWorkflow(q,["completed","finalReport"])}
+    if(kind==="completed"&&s){s.opStage="Completado";syncQuoteService(q,"report");markWorkflow(q,["completed"])}
+    if(kind==="commence"&&s){s.opStage="Buzo en agua";syncQuoteService(q,"progress");markWorkflow(q,["commenced"])}
+    if(q?.id){q.log=q.log||[];q.log.push("Email sent: "+kind)}
+    closeModal();save();if($("#drawerBg").classList.contains("open")&&q?.id)refreshCase(q);else render();toast("Email enviado y flujo actualizado");return;
+  }
+  if(a==="issue-invoice"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),s=syncQuoteService(q,"report");
+    if(s){s.invoiced=true;s.reportSent=true}
+    markWorkflow(q,["preInvoice","finalReport"]);save();render();if(q?.id){quoteDetail(q.id);email("invoice",q.id)}return;
+  }
+  if(a==="set-case-status"){
+    e.stopPropagation();
+    const q=state.quotes.find(x=>x.id===el.dataset.id),status=$("#caseStatus")?.value,s=syncQuoteService(q,status);
+    if(status==="confirmed")markWorkflow(q,["quoteSent"]);
+    if(status==="progress")markWorkflow(q,["quoteSent","commenced"]);
+    if(status==="report")markWorkflow(q,["quoteSent","commenced","completed","finalReport"]);
+    if(status==="closed")markWorkflow(q,["quoteSent","commenced","completed","finalReport","preInvoice"]);
+    if(s)workflowChecks(q,s);
+    refreshCase(q);toast("Estado y flujo sincronizados");return;
+  }
+  baseActWorkflow(e,el);
+}
+ensureUwWorkflowCss();
 compactMenu();
 render();
 
