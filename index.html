@@ -1218,6 +1218,101 @@ lHandle=function(action,el){
 }
 document.addEventListener("input",e=>{const r=e.target.closest("[data-l-record-filter]");if(r)lApplyRecordFilter(r)},true);
 document.addEventListener("change",e=>{const r=e.target.closest("[data-l-record-filter]");if(r)lApplyRecordFilter(r)},true);
+function lEnsurePizarraTableCss(){
+  if($("#lanchasPizarraCss"))return;
+  document.head.insertAdjacentHTML("beforeend",`<style id="lanchasPizarraCss">
+    .pizarra-wrap{border:1px solid #9aaec1;border-radius:8px;overflow:auto;background:#f7dccc;box-shadow:0 14px 32px rgba(15,23,42,.08)}
+    .pizarra-table{width:100%;min-width:1320px;border-collapse:collapse;font-size:11px;line-height:1.25;background:#f7dccc}
+    .pizarra-table th{position:sticky;top:0;z-index:2;background:#8fb3d9;color:#0f2740;border:1px solid #6f91b5;padding:5px 7px;font-size:10px;text-transform:uppercase;letter-spacing:0;font-weight:900}
+    .pizarra-table td{border:1px solid #b98f7e;padding:3px 5px;vertical-align:middle;background:#f7dccc;color:#172033}
+    .pizarra-table tr.pz-alert td{background:#f4b17f}
+    .pizarra-table tr.pz-hot td{background:#fff200}
+    .pizarra-cell{min-height:22px;border:1px solid transparent;border-radius:3px;padding:3px 5px;background:rgba(255,255,255,.18)}
+    .pizarra-cell:focus{outline:2px solid #087ea4;background:white}
+    .pz-select{width:100%;min-height:24px;border:1px solid #a8b7c7;border-radius:3px;background:#eef2f6;padding:2px 18px 2px 5px;font-size:11px}
+    .pz-date,.pz-time{width:100%;min-height:24px;border:1px solid transparent;background:transparent;padding:2px 4px;font-family:var(--mono);font-size:11px;color:#111827}
+    .pz-yellow{background:#fff3a3!important}
+    .pz-blue{background:#b9d7ee!important}
+    .pz-status{display:inline-flex;width:100%;min-height:24px;align-items:center;justify-content:center;border-radius:3px;font-weight:900;text-transform:uppercase;font-size:10px}
+    .pz-ok{background:#e8f7df;color:#235b21}
+    .pz-pending{background:#fff4cf;color:#7a5200}
+    .pz-nocharge{background:#ffef82;color:#5e4700}
+    .pizarra-legend{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+    .pizarra-legend span{border:1px solid #ccd8e0;border-radius:999px;padding:5px 9px;background:white;font-size:11px;font-weight:900;color:#375466}
+  </style>`);
+}
+function lPizarraRows(){
+  const rows=[
+    ["RIO/ENAGAS","BASURA","A9","LEVANTE LNG","ALEX HUELVA","DESEMBARCAR BASURAS","02/05/2026","10:00","AL COSTADO","","","","POR REALIZAR"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","EMBARCAR SUPERINTENDENTE","03/05/2026","5:00","PDM","JOSE","","","POR REALIZAR"],
+    ["FONDEO","FW","","HYDE PARK","IBERICA","60 TON FW","03/05/2026","14:30","AL COSTADO","JOSE","","CARGA 02/05 - 13:00 JOSE","OK"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","DES EMBARCAR SIRE INSPECTOR + SUPERINTENDENTE","03/05/2026","18:45","AL COSTADO","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO","CREW","A7","IVER BEST","AMSPEC","EMBARCAR TECNICO / ESPERA AL COSTADO","04/05/2026","20:00","PDM","RAFAEL","","","OK"],
+    ["FONDEO","CREW","A7","TORM AGNES","AMSPEC","EMBARCAR SURVEYOR","04/05/2026","3:30","PDM","JOSE","","","OK"],
+    ["FONDEO","CREW","A7","TORM AGNES","AMSPEC","DESEMBARCAR SURVEYOR","04/05/2026","7:00","AL COSTADO","JOSE","","","OK"],
+    ["OPL","CARGO","A9","NORTH VALLEY","AGUNSA","3-4 PALLETS BAYPORT - CONFIRMAN TOTAL","05/05/2026","14:00","LS","JOSE","SOLICITAR GRUA","ALBARAN MINIMO","POR REALIZAR","alert"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","EMBARCAR 8 ON + 2 TECNICOS","05/05/2026","15:00","MS","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO SMB","CARGO","AITOR UNO","MONTE ULIA","IBAIZABAL","10-17 PALLETS APROX - SUISCA / fresco / congelado - todo lo que quepa","05/05/2026","14:30","LEVANTE SUR","FCO","SOLICITAR GRUA","","POR REALIZAR"],
+    ["FONDEO SMB","CARGO","A9","MONTE ULIA","IBAIZABAL","20-25 PALLETS SUISCA + BAYPORT / TECNICO + MIGUEL / DESEMBARCAN MUESTRAS + BASURAS (AH)","05/05/2026","15:00","LEVANTE SUR","JOSE","SOLICITAR GRUA","","POR REALIZAR"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","EMBARCAR 1 CAPITAN + DESEMBARCAR 10 OFF SIGNER","05/05/2026","17:00","MS","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","DESEMBARCAR 1 TECNICO POR PDM","05/05/2026","20:45","AL COSTADO","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO SMB","CREW","A7","MONTE ULIA","IBAIZABAL","DESEMBARCAR 1 TECNICO POR PDM","06/05/2026","0:00","AL COSTADO","RAFAEL","","","POR REALIZAR"],
+    ["RIO/ENAGAS","BASURA","A9","NEW FRONTIER 1","ALEX HUELVA","DESEMBARCAR BASURAS","05/05/2026","7:30","AL COSTADO","JOSE","","","POR REALIZAR"],
+    ["OPL","CREW","A7","NORTH VALLEY","AGUNSA","EMBARCAR 3 ON + CAJAS BAYPORT // DESEMBARCAN 3 OFF","05/05/2026","7:30","MS","PABLO","","ALBARAN MINIMO","POR REALIZAR"],
+    ["FONDEO","CARGO","A9","GINGA MARITA","TALMAR","4.000 + 2.000","05/05/2026","13:00","AL COSTADO","JOSE","","CARGA 02/05-20:00 H JOSE","POR REALIZAR"],
+    ["FONDEO","CARGO","A9","BW LILAC","GAC","EMBARCAR 7 pallets INFANTE + 2 GIBARGO 3500 APROX + SUISCA BATERIAS / BASURAS (AH) + DESEMBARCAR 5 ITEMS PESADO","06/05/2026","14:30","LEVANTE SUR","JOSE","SOLICITAR GRUA","ALBARAN MINIMO","POR REALIZAR"],
+    ["OPL","CARGO","A7","NORTH VALLEY","AGUNSA","EMBARCAR MALETAS","07/05/2026","5:00","AL COSTADO","JOSE","SOLICITAR GRUA","ALBARAN MINIMO","NO SE COBRA CC"],
+    ["FONDEO","CREW","A7","BICE AMORETTI","TALMAR","DESEMBARCAR DOS INSPECTORES DE PRE-PURCHASE INSPECTION (6 HRS DE TRABAJO A BORDO) + 2 DE ROSM (4 HRS A BORDO)","07/05/2026","20:00","PDM","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO","CARGO","A9","BICE AMORETTI","TALMAR","EMBARCAR PROVISIONES DE SUISCA / DESEMBARCAR LANDING / DESEMBARCAR BASURAS (AH)","08/05/2026","15:00","LEVANTE SUR","JOSE","SOLICITAR GRUA","ALBARAN MINIMO","POR REALIZAR"],
+    ["FONDEO","CREW","A7","BICE AMORETTI","TALMAR","DESEMBARCAR DOS INSPECTORES DE PRE-PURCHASE INSPECTION + 2 DE ROSM","08/05/2026","16:00","AL COSTADO","RAFAEL","","","POR REALIZAR"],
+    ["FONDEO","FW","A9","T RIGEL","ERSHIP","60 TM DE AGUA","08/05/2026","10:00","AL COSTADO","JOSE","","","CARGANDO EN MUELLE"],
+    ["FONDEO","CREW","A7","BICE AMORETTI","TALMAR","EMBARCAR 4 TRIPULANTES - DESEMBARCAR 4 TRIPULANTES","09/05/2026","20:00","MS","PACO","","","POR REALIZAR"],
+    ["FONDEO","CREW","A7","BICE AMORETTI","TALMAR","EMBARCAR 3 TECNICOS DE C-SERVICES, DEXTINSURY Y BALTIC MARINE + MALETA + PAQUETE PEQUENO","10/05/2026","20:30","PDM","JOSE","","","POR REALIZAR"],
+    ["FONDEO","CARGO","A7","T RIGEL","ERSHIP","BASURAS","11/05/2026","15:00","AL COSTADO","JOSE","","","CARGANDO EN MUELLE"],
+    ["FONDEO","CREW","A7","BICE AMORETTI","TALMAR","EMBARCAR CAJA ZAPATOS // DESEMBARCAR 4 TECNICOS","11/05/2026","15:00","AL COSTADO","JOSE","","ALBARAN MINIMO","POR REALIZAR"],
+    ["FONDEO","CARGO","A7","BICE AMORETTI","IBERICA","EMBARCAR 3 CAJAS","11/05/2026","","PDM","JOSE","","ALBARAN MINIMO","POR REALIZAR","hot"]
+  ];
+  return rows.map((r,i)=>({id:"pz-"+i,service:r[0],type:r[1],launch:r[2],vessel:r[3],agent:r[4],description:r[5],day:r[6],hour:r[7],place:r[8],patron:r[9],crane:r[10],obs:r[11],account:r[12],tone:r[13]||""}));
+}
+function lPizarraStatusCell(value){
+  const cls=/OK/i.test(value)?"pz-ok":/NO SE COBRA|CARGANDO/i.test(value)?"pz-nocharge":"pz-pending";
+  return`<span class="pz-status ${cls}">${h(value||"POR REALIZAR")}</span>`;
+}
+function lPizarraTable(rows=lPizarraRows()){
+  return`<div class="pizarra-wrap"><table class="pizarra-table"><thead><tr><th>SERVICIO</th><th>TIPO</th><th>LANCHA</th><th>BUQUE</th><th>AGENTE</th><th>DESCRIPCION</th><th>DIA</th><th>HORA</th><th>LUGAR</th><th>PATRON</th><th>GRUA</th><th>OBSERVACIONES</th><th>CONTABILIDAD</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.tone==="alert"?"pz-alert":r.tone==="hot"?"pz-hot":""}"><td><div class="pizarra-cell" contenteditable="true">${h(r.service)}</div></td><td><select class="pz-select"><option ${r.type==="CREW"?"selected":""}>CREW</option><option ${r.type==="CARGO"?"selected":""}>CARGO</option><option ${r.type==="FW"?"selected":""}>FW</option><option ${r.type==="BASURA"?"selected":""}>BASURA</option></select></td><td><select class="pz-select"><option ${r.launch==="A7"?"selected":""}>A7</option><option ${r.launch==="A9"?"selected":""}>A9</option><option ${r.launch==="AITOR UNO"?"selected":""}>AITOR UNO</option><option ${r.launch===""?"selected":""}></option></select></td><td><div class="pizarra-cell" contenteditable="true">${h(r.vessel)}</div></td><td><div class="pizarra-cell" contenteditable="true">${h(r.agent)}</div></td><td><div class="pizarra-cell" contenteditable="true">${h(r.description)}</div></td><td><input class="pz-date" value="${h(r.day)}"></td><td><input class="pz-time" value="${h(r.hour)}"></td><td><select class="pz-select"><option ${r.place==="PDM"?"selected":""}>PDM</option><option ${r.place==="MS"?"selected":""}>MS</option><option ${r.place==="AL COSTADO"?"selected":""}>AL COSTADO</option><option ${r.place==="LEVANTE SUR"?"selected":""}>LEVANTE SUR</option><option ${r.place==="LS"?"selected":""}>LS</option></select></td><td><div class="pizarra-cell" contenteditable="true">${h(r.patron)}</div></td><td class="${r.crane?"pz-yellow":"pz-blue"}"><div class="pizarra-cell" contenteditable="true">${h(r.crane)}</div></td><td class="${r.obs?"pz-yellow":""}"><div class="pizarra-cell" contenteditable="true">${h(r.obs)}</div></td><td>${lPizarraStatusCell(r.account)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function lPizarraTableText(){
+  return lPizarraRows().map(r=>[r.service,r.type,r.launch,r.vessel,r.agent,r.description,r.day,r.hour,r.place,r.patron,r.crane,r.obs,r.account].join(" | ")).join("\\n");
+}
+lBoardText=function(){return`SERVICIO | TIPO | LANCHA | BUQUE | AGENTE | DESCRIPCION | DIA | HORA | LUGAR | PATRON | GRUA | OBSERVACIONES | CONTABILIDAD\\n${lPizarraTableText()}`}
+lBoardMessageModal=function(){
+  openModal(`<div class="section"><div><h3>Texto de pizarra</h3><p>Formato tabla para copiar y enviar por canal operativo.</p></div><button class="btn" onclick="closeAll()">X</button></div><label>Pizarra generada<textarea>${h(lBoardText())}</textarea></label><div class="toolbar"><button class="btn primary" data-l-action="dispatch-board">Simular envio pizarra</button><button class="btn" onclick="closeAll()">Cerrar</button></div>`);
+}
+lPizarraHero=function(){
+  const rows=lPizarraRows(),pending=rows.filter(x=>/POR REALIZAR/i.test(x.account)).length,ok=rows.filter(x=>/OK/i.test(x.account)).length,crane=rows.filter(x=>x.crane).length;
+  return`<div class="board-panel"><div class="board-head"><div><h3>Pizarra operativa</h3><p>Tabla tipo Excel para coordinar servicios de lancha, fechas, patron, grua, observaciones y contabilidad.</p></div><button class="btn primary" data-l-nav="pizarras">Abrir pizarra</button></div><div class="board-kpis"><div class="board-kpi"><strong>${rows.length}</strong><span class="muted">lineas</span></div><div class="board-kpi"><strong>${pending}</strong><span class="muted">por realizar</span></div><div class="board-kpi"><strong>${ok}</strong><span class="muted">OK</span></div><div class="board-kpi"><strong>${crane}</strong><span class="muted">requieren grua</span></div></div><div style="margin-top:12px">${lPizarraTable(rows.slice(0,8))}</div></div>`;
+}
+lPizarrasView=function(){
+  lEnsurePizarraTableCss();
+  return`<div class="panel"><div class="section"><div><h3>Pizarra de servicios</h3><p>Vista replicada desde la tabla adjunta. Las celdas son editables para simular cambios rapidos antes de despachar.</p></div><div class="toolbar"><button class="btn" data-l-action="copy-board">Copiar texto pizarra</button><button class="btn primary" data-l-action="dispatch-board">Simular envio pizarra</button></div></div><div class="pizarra-legend"><span style="background:#f7dccc">Base operativa</span><span style="background:#f4b17f">Atencion especial</span><span style="background:#fff200">Linea destacada</span><span style="background:#fff3a3">Grua / observaciones</span><span style="background:#e8f7df">OK</span></div>${lPizarraTable()}</div>`;
+}
+const lNormalizePizarraBase=lNormalize;
+lNormalize=function(){
+  const requested=lState.current;
+  lNormalizePizarraBase();
+  if(requested==="pizarras")lState.current="pizarras";
+}
+renderLNav=function(){
+  lNormalize();
+  const items=[["dashboard","Dashboard","DB"],["pizarras","Pizarras","PZ"],["services","Servicios","SV"],["calendar","Calendario","CA"],["records","Registros","RG"]];
+  $("#lNav").innerHTML=`<div class="nav-title">Lanchas</div>${items.map(([id,label,ico])=>`<button class="${lState.current===id?"active":""}" data-l-nav="${id}"><span class="ico">${ico}</span><span>${label}</span></button>`).join("")}`;
+}
+renderLanchas=function(){
+  lNormalize();renderLNav();
+  const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],pizarras:["Pizarras","Tabla operativa tipo Excel para coordinar servicios de lancha."],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista de 14 dias de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."]};
+  const [t,s]=titles[lState.current]||titles.dashboard;
+  $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,calendar:lCalendarView,records:lRecordsView}[lState.current]||lDashboard)();
+}
 function updateLClock(){if($("#lClock"))$("#lClock").textContent=new Date().toLocaleTimeString("es-ES",{timeZone:"Europe/Madrid",hour:"2-digit",minute:"2-digit"})+" UTC+2"}
 initBusinessShell();
 updateLClock();
