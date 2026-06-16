@@ -1163,7 +1163,7 @@ lNormalize=function(){
   });
 }
 lPortChooser=function(){
-  return`<div class="port-switch">${lPortOrder().map(([id,name,desc])=>`<button class="port-card ${lState.port===id?"active":""}" data-l-action="set-port" data-port="${id}"><strong>${name}</strong><span>${desc}</span><span class="badge ${lState.port===id?"confirmed":"quoted"}">${lState.port===id?"Puerto activo":"Elegir puerto"}</span></button>`).join("")}</div>`;
+  return`<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><span style="font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Puerto:</span>${lPortOrder().map(([id,name])=>`<button style="min-height:32px;padding:5px 14px;border-radius:999px;border:2px solid ${lState.port===id?"var(--sea)":"var(--line)"};background:${lState.port===id?"var(--sea)":"white"};color:${lState.port===id?"white":"var(--text)"};font-size:12px;font-weight:900;cursor:pointer" data-l-action="set-port" data-port="${id}">${name}${lState.port===id?" ✓":""}</button>`).join("")}</div>`;
 }
 function lNormalizeDateFromText(raw){
   const v=String(raw||"").trim();
