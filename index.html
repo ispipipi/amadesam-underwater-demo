@@ -750,13 +750,12 @@ function lRecibidoConformeModal(s){
   const vessel=h(s.vessel||"[BUQUE]"),agent=h(s.agent||"[AGENTE]"),ref=h(s.ref||"-"),
     tipo=h(lServiceTypeLabel(s.type||"")),fecha=h(s.date||""),hora=h(s.departDockTime||s.time||""),
     jobNo=h(s.jobNo||"");
-  const tpl=`Estimado agente,\n\nACUSAMOS RECIBO CONFORME del servicio de lancha:\n\nBuque: ${vessel}\nRef. agencia: ${ref}\nServicio: ${tipo}\nFecha: ${fecha} · Hora salida: ${hora}\nLancha: ${h(s.launch||"Por confirmar")}\nPatron: ${h(s.patron||"Por asignar")}\n\nObservaciones:\n[CAMPO ABIERTO]\n\nQuedamos a su disposicion.\nAMADESAM Lanchas`;
-  openModal(\`<div class="section"><div><h3>✉️ Recibido conforme — \${jobNo}</h3><p>Servicio creado correctamente. Revisa y personaliza el email antes de enviar.</p></div><button class="btn" onclick="closeAll()">X</button></div><label style="margin-bottom:10px">Destinatario<input id="rcEmail" value="\${agent}" placeholder="email o nombre del agente"></label><label>Cuerpo del email<textarea id="rcBody" style="min-height:280px">\${h(tpl)}</textarea></label><div id="rcObsBox" style="margin-top:10px"><label>Observaciones adicionales<textarea id="rcObs" placeholder="Ej: equipaje extra, permiso pendiente, condiciones especiales…" style="min-height:80px"></textarea></label></div><div class="toolbar"><button class="btn primary" data-l-action="send-recibido" data-id="\${s.id}">Enviar recibido conforme</button><button class="btn" onclick="closeAll()">Omitir</button></div>\`);
-  // wire obs → body live
+  const tpl="Estimado agente,\n\nACUSAMOS RECIBO CONFORME del servicio de lancha:\n\nBuque: "+vessel+"\nRef. agencia: "+ref+"\nServicio: "+tipo+"\nFecha: "+fecha+" · Hora salida: "+hora+"\nLancha: "+h(s.launch||"Por confirmar")+"\nPatron: "+h(s.patron||"Por asignar")+"\n\nObservaciones:\n[escriba aqui]\n\nQuedamos a su disposicion.\nAMADESAM Lanchas";
+  openModal(`<div class="section"><div><h3>✉️ Recibido conforme · ${jobNo}</h3><p>Servicio creado. Revisa y personaliza antes de enviar.</p></div><button class="btn" onclick="closeAll()">X</button></div><label style="margin-bottom:10px">Destinatario<input id="rcEmail" value="${agent}" placeholder="email o nombre del agente"></label><label>Cuerpo del email<textarea id="rcBody" style="min-height:260px">${h(tpl)}</textarea></label><label style="margin-top:10px">Observaciones adicionales<textarea id="rcObs" placeholder="Ej: equipaje extra, permiso pendiente…" style="min-height:70px"></textarea></label><div class="toolbar"><button class="btn primary" data-l-action="send-recibido" data-id="${s.id}">Enviar recibido conforme</button><button class="btn" onclick="closeAll()">Omitir</button></div>`);
   setTimeout(()=>{
-    const obs=$('#rcObs'),body=$('#rcBody');
-    if(obs&&body)obs.addEventListener('input',()=>{body.value=body.value.replace(/\[CAMPO ABIERTO\][^\n]*/,'Observaciones: '+obs.value.trim())});
-  },50);
+    const obs=document.querySelector("#rcObs"),body=document.querySelector("#rcBody");
+    if(obs&&body)obs.addEventListener("input",()=>{const t=body.value;body.value=t.replace(/\[escriba aqui\][^]*/,"Observaciones: "+obs.value.trim())});
+  },60);
 }
 function lSaveService(id){
   const next=lReadForm(id||"");
@@ -994,8 +993,8 @@ function lHandle(action,el){
   if(action==="dispatch")lDispatchModal(el.dataset.id);
   if(action==="send-dispatch"){const s=lState.services.find(x=>x.id===el.dataset.id);if(s){s.status="assigned";s.log=s.log||[];s.log.push("Despacho enviado por correo simulado");lSave();closeAll();renderLanchas();lServiceDetail(s.id);toast("Correo de despacho simulado")}}
   if(action==="set-service-status")lSetStatus(el.dataset.id,el.dataset.status);
-  if(action===="cancel-service")lCancel(el.dataset.id);
-  if(action===="send-recibido"){const s=lState.services.find(x=>x.id===el.dataset.id);if(s){s.log=s.log||[];s.log.push("Recibido conforme enviado");lSave();}closeAll();toast("Recibido conforme enviado");renderLanchas();}
+  if(action==="cancel-service")lCancel(el.dataset.id);
+  if(action==="send-recibido"){const s=lState.services.find(x=>x.id===el.dataset.id);if(s){s.log=s.log||[];s.log.push("Recibido conforme enviado");lSave();}closeAll();toast("Recibido conforme enviado");renderLanchas();}
   if(action==="invoice-service")lInvoice(el.dataset.id);
   if(action==="confirm-invoice-service")lConfirmInvoice(el.dataset.id);
   if(action==="albaran-ocr")lAlbaranModal(el.dataset.id);
