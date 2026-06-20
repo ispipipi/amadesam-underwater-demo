@@ -185,7 +185,29 @@ function abrirEnvioUrgente(){
     +"<button class='btn' onclick='closeAll()'>Cancelar</button></div>";
   openModal(html2);
 }
-function copyPizarra(){try{navigator.clipboard.writeText(pizarraSemanaTxt()).then(function(){toast("Texto copiado");});}catch(e){}}
+function copyPizarra(){try{navigator.clipboard.writeText(pizarraSemanaTxt()).then(function(){toast("Texto de buzos copiado");});}catch(e){}}
+function serviciosConfirmadosList(){
+  return state.services.filter(function(s){return !["closed","cancelled"].includes(s.status);}).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
+}
+function serviciosConfirmadosSvc(s){
+  var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
+  var scope=((q.services||[]).join(" + ")||"SERVICIO PENDIENTE").toUpperCase();
+  var eta=String(s.eta||q.eta||"").replace("T"," ").slice(0,16);
+  var etd=String(s.ets||q.ets||"").replace("T"," ").slice(0,16);
+  return ["*"+(s.ship||"").toUpperCase()+"*",eta?"ETA: "+eta+(etd?" - ETD: "+etd:""):"ETA: TBC",scope,"CLIENTE: "+(s.client||q.client||"TBC").toUpperCase()].join("\n");
+}
+function serviciosConfirmadosTxt(){
+  var rows=serviciosConfirmadosList();
+  if(!rows.length)return"Sin servicios confirmados.";
+  return"*SERVICIOS CONFIRMADOS*\n\n"+rows.map(serviciosConfirmadosSvc).join("\n\n");
+}
+function copyServiciosGerencia(){try{navigator.clipboard.writeText(serviciosConfirmadosTxt()).then(function(){toast("Servicios confirmados copiados");});}catch(e){}}
+function enviarServiciosGerencia(){
+  var txt=serviciosConfirmadosTxt();
+  var entry={fecha:new Date().toLocaleDateString("es-ES"),hora:new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}),horario:"GERENCIA",comentario:"Servicios confirmados",tipo:"gerencia",texto:txt};
+  state.pizarraEnvios=state.pizarraEnvios||[];state.pizarraEnvios.unshift(entry);save();
+  window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");toast("Servicios confirmados enviados a gerencia");render();
+}
 function pizarraSemanaSvc(s){
   var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
   var svcs=((q.services||[]).join(" + ")||"SERVICIO PENDIENTE").toUpperCase();
@@ -193,7 +215,7 @@ function pizarraSemanaSvc(s){
   var etd=String(s.ets||q.ets||"").replace("T"," ").slice(0,16);
   var bunk=s.bunkering||"TBC";
   var perm=s.permit==="Aprobado"?"TENEMOS PERMISOS":"NO TENEMOS PERMISOS";
-  var lines=["***"+(s.ship||"").toUpperCase()+(s.imo?" (IMO: "+s.imo+")":"")+(s.loa?" "+s.loa+"M":"")+(s.draft?" DRAFT: "+s.draft+"M":"")+"***",eta?"ETB "+eta+(etd?" ETD: "+etd:""):"",svcs,s.clientInfo?"INFO: "+s.clientInfo:"",s.specialObs?s.specialObs.toUpperCase():"","BUNKERING: "+(bunk==="Si"?"CONFIRMADO":bunk==="No"?"SIN BUNKERING":"TBC"),"CLIENTE "+(s.client||q.client||"").toUpperCase(),perm].filter(Boolean);
+  var lines=["*"+(s.ship||"").toUpperCase()+(s.imo?" (IMO: "+s.imo+")":"")+(s.loa?" "+s.loa+"M":"")+(s.draft?" DRAFT: "+s.draft+"M":"")+"*",eta?"ETB "+eta+(etd?" ETD: "+etd:""):"",svcs,s.clientInfo?"INFO: "+s.clientInfo:"",s.specialObs?s.specialObs.toUpperCase():"","BUNKERING: "+(bunk==="Si"?"CONFIRMADO":bunk==="No"?"SIN BUNKERING":"TBC"),"CLIENTE "+(s.client||q.client||"").toUpperCase(),perm].filter(Boolean);
   return lines.join("\n");
 }
 function pizarraSemanaTxt(){
@@ -204,7 +226,7 @@ function pizarraSemanaTxt(){
     return d>=-1&&d<=7;
   }).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
   if(!svcs.length)return"Sin servicios confirmados para esta semana.";
-  return"***TRABAJOS DE LA SEMANA***\n\n"+svcs.map(pizarraSemanaSvc).join("\n\n")+"\n\n***REPORTES PENDIENTES***";
+  return"*TRABAJOS DE LA SEMANA*\n\n"+svcs.map(pizarraSemanaSvc).join("\n\n")+"\n\n*REPORTES PENDIENTES*";
 }
 function pizarraSemanaDayCard(s){
   var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
@@ -236,6 +258,8 @@ function pizaremana(){
   }).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
   var txt=pizarraSemanaTxt();
   var waUrl="https://wa.me/?text="+encodeURIComponent(txt);
+  var gerTxt=serviciosConfirmadosTxt();
+  var gerCount=serviciosConfirmadosList().length;
   var days=Array.from({length:8},function(_,i){var d=new Date(now);d.setDate(now.getDate()+i);return d;});
   var sLen=svcsWeek.length;
   var dayRows=days.map(function(day){
@@ -262,8 +286,11 @@ function pizaremana(){
       +"</button>";
   }).join("");
   return "<div class='panel' style='margin-bottom:14px'>"
-    +"<div class='section'><div><h3>Pizarra de la Semana</h3><p>"+sLen+" servicio"+(sLen!==1?"s":"")+" confirmado"+(sLen!==1?"s":"")+" en los proximos 7 dias.</p></div>"
-    +"<div class='toolbar'><a href='"+waUrl+"' target='_blank' class='btn primary' style='text-decoration:none'>Enviar por WhatsApp</a><button class='btn' onclick='copyPizarra()'>Copiar texto</button></div></div>"
+    +"<div class='section'><div><h3>Servicios confirmados · Gerencia</h3><p>"+gerCount+" servicios en formato ejecutivo segun SERVICIOS CONFIRMADOS 1.docx.</p></div><div class='toolbar'><button class='btn primary' onclick='enviarServiciosGerencia()'>Enviar a gerencia</button><button class='btn' onclick='copyServiciosGerencia()'>Copiar texto</button></div></div>"
+    +"<pre style='margin:0;max-height:320px;overflow:auto;white-space:pre-wrap;border:1px solid var(--line);background:#f8fbfc;border-radius:8px;padding:14px;font:12px/1.45 var(--mono)'>"+h(gerTxt)+"</pre></div>"
+    +"<div class='panel' style='margin-bottom:14px'>"
+    +"<div class='section'><div><h3>Trabajos de la semana · Buzos</h3><p>"+sLen+" servicio"+(sLen!==1?"s":"")+" confirmado"+(sLen!==1?"s":"")+" en los proximos 7 dias, con instrucciones, bunkering y permisos.</p></div>"
+    +"<div class='toolbar'><a href='"+waUrl+"' target='_blank' class='btn primary' style='text-decoration:none'>Enviar a buzos</a><button class='btn' onclick='copyPizarra()'>Copiar texto</button></div></div>"
     +(sLen?dayRows:empty)+"</div>"
     +"<div class='grid two' style='gap:14px'>"
     // Envios rapidos
@@ -613,13 +640,13 @@ function compactMenu(){
     ["dashboard","Dashboard","DB"],
     ["quote-new","Cotizador","CZ"],
     ["quotes","Operaciones","OP"],
-    ["pizarra-semana","Pizarra Semana","PS"],
+    ["pizarra-semana","Envios","EN"],
     ["history","Registros","RG"]
   ]]);
   Object.assign(titles,{
     "quote-new":["Cotizador","Analisis con IA, disponibilidad y cotizaciones desde un solo flujo."],
     quotes:["Operaciones","Expedientes vivos: cotizados, nominados, en curso o pendientes de cierre."],
-    "pizarra-semana":["Pizarra de la Semana","Trabajos confirmados proximos 7 dias para el equipo de buceo."],
+    "pizarra-semana":["Envios operativos","Servicios confirmados para gerencia y trabajos de la semana para buzos."],
     history:["Registros","Cotizaciones ganadas/perdidas y expedientes facturados o cerrados."]
   });
 }
