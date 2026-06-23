@@ -32,7 +32,7 @@
 const today=new Date("2025-05-19T08:30:00"),KEY="amadesam-demo-v4",money=new Intl.NumberFormat("en-US",{style:"currency",currency:"EUR",maximumFractionDigits:0});
 const services=["Hull inspection","Hull cleaning","Propeller polishing","Class survey support","Anode replacement","Sea chest cleaning","Damage assessment"];
 const examples=[{id:"q1",type:"quote",title:"Cotizacion · Pavilion",summary:"Limpieza + pulido durante bunkering.",body:"Dear AMADESAM,\\nPlease quote underwater hull cleaning and propeller polishing for MV Pavilion. ETA Algeciras 23 May 2025 at anchorage. Client CMA CGM. Clean equipment requested during bunkering."},{id:"q2",type:"quote",title:"Cotizacion · Milan",summary:"Inspeccion de clase con surveyor.",body:"Good morning,\\nKindly send your quotation for underwater hull inspection and class survey support for MV Milan, IMO 9345678. ETA Algeciras 28 May 2025, APM Terminal. Client Global UWS. Surveyor attendance required."},{id:"a1",type:"availability",title:"Disponibilidad · Yenisei",summary:"Consulta si hay equipo para ventana ETA.",body:"Dear AMADESAM Ops,\\nPlease confirm availability of diving team for MV Yenisei on 24 May 2025 around 11:00 LT at TTI Algeciras. Scope may include hull cleaning and sea chest inspection. Client MERS. Please advise earliest available slot."},{id:"a2",type:"availability",title:"Disponibilidad urgente · Newport",summary:"Ventana corta, servicio hoy.",body:"Hello,\\nCan you confirm immediate availability today for MV Newport at Algeciras anchorage? ETA 19 May 2025 07:40. We need divers ready for propeller polishing after bunkering. Agent Alfa Ship. Please confirm team availability before we request formal quote."}];
-const groups=[["Vista general",[["dashboard","Dashboard","DB"]]],["Cotizaciones",[["quote-new","Nueva Cotizacion","NQ"],["followup","Seguimiento","SG"]]],["Confirmaciones",[["confirmed","Servicios Confirmados","SC"],["prearrival","Documentacion Pre-Arribo","PA"]]],["Permisos",[["permits-form","Solicitudes Pendientes","RP"],["permits-status","Estado Permisos","EP"]]],["Operaciones",[["quotes","Expedientes","EX"],["ops-calendar","Calendario","CW"],["pizarra-semana","Pizarra Semana","PS"],["active","Servicios Activos","SA"]]],["Reportes",[["worksheets","Worksheets","WS"],["final-reports","Reportes Finales","RF"]]],["Facturacion",[["invoice-pending","Pendientes de Factura","PF"],["history","Historial","HI"]]],["Configuracion",[["rates","Tarifas","TR"],["clients","Clientes","CL"],["commercial","Parametros Comerciales","PC"]]]];
+const groups=[["Vista general",[["dashboard","Dashboard","DB"]]],["Cotizaciones",[["quote-new","Nueva Cotizacion","NQ"],["followup","Seguimiento","SG"]]],["Confirmaciones",[["confirmed","Servicios Confirmados","SC"],["prearrival","Documentacion Pre-Arribo","PA"]]],["Permisos",[["permits-form","Solicitudes Pendientes","RP"],["permits-status","Estado Permisos","EP"]]],["Operaciones",[["quotes","Expedientes","EX"],["ops-calendar","Calendario","CW"],["pizarra-semana","Pizarra","PZ"],["active","Servicios Activos","SA"]]],["Reportes",[["worksheets","Worksheets","WS"],["final-reports","Reportes Finales","RF"]]],["Facturacion",[["invoice-pending","Pendientes de Factura","PF"],["history","Historial","HI"]]],["Configuracion",[["rates","Tarifas","TR"],["clients","Clientes","CL"],["commercial","Parametros Comerciales","PC"]]]];
 const titles={dashboard:["Dashboard","KPIs diarios, calendario semanal, alertas SLA y situacion viva de servicios submarinos."],"quote-new":["Nueva Cotizacion","Analisis con IA del email, deteccion de Cotizacion o Disponibilidad y preview operativo."],quotes:["Expedientes","Expedientes de servicio con acciones operativas, permisos, reportes y facturacion."],followup:["Seguimiento","Cotizaciones pendientes con mas de 3 dias sin respuesta."],confirmed:["Servicios Confirmados","Servicios listos para documentacion pre-arribo y permisos."],prearrival:["Documentacion Pre-Arribo","Checklist operacional con fecha y notas."],"permits-form":["Solicitudes Pendientes","Formulario DockRP con documentos simulados."],"permits-status":["Estado Permisos","Kanban de permisos y alertas SLA."],"ops-calendar":["Calendario Operacional","Vista de expedientes por semana, mes o año, filtrada por estado."],divers:["Pizarra Buzos","Asignacion de Equipo A / B, bunkering y permisos."],active:["Servicios Activos","Transiciones de servicio y previews de email."],worksheets:["Worksheets","Carga de horas, calado, visibilidad y notas."],"final-reports":["Reportes Finales","Preview de reporte final y envio simulado."],"invoice-pending":["Pendientes de Factura","Servicios con reporte enviado y sin factura."],history:["Historial","Servicios cerrados y resumen financiero."],rates:["Tarifas","Tabla editable por rango de eslora."],clients:["Clientes","Maestro de clientes."],commercial:["Parametros Comerciales","Reglas comerciales y operativas."]};
 function seed(){return{current:"quotes",uwPort:"algeciras",uwPortChosen:false,pizarraEnvios:[],sort:{key:"eta",dir:"asc"},filters:{text:"",status:"all",client:"all"},quoteForm:{requestType:"quote",exampleId:"q1",email:examples[0].body,ship:"Pavilion",client:"CMA CGM",services:["Hull cleaning","Propeller polishing"],date:"2025-05-23",method:"Clean equipment during bunkering",template:"A"},clients:[["Alfa Ship","Agent",10,true,"ops@alfaship.example"],["CMA CGM","Direct",0,false,"uws@cma-cgm.example"],["MERS","Direct",0,true,"marine@mers.example"],["Augusta Maritime","Agent",15,false,"agency@augusta.example"],["Global UWS","Broker",10,false,"broker@globaluws.example"]].map(([name,type,commission,special,email])=>({name,type,commission,special,email,notes:"",minHours:name==="Alfa Ship"?4:name==="Global UWS"?4:name==="HCR"?3:name==="MERS"?4:name==="Augusta Maritime"?3:2,reqs:{firmaHoja:name==="HCR"||name==="Global UWS",softBrushes:name==="Alfa Ship",requiereSurveyor:false,aprobPrevia:name==="Alfa Ship",fotosRef:name==="Alfa Ship"},reqsText:name==="Alfa Ship"?"UWI y limpieza directa. Proceder con limpieza directa de lo sucio evitando demoras. Mantener informados de resultados e ETC con fotos de referencia. Ante imprevistos informar inmediatamente por tel y email. Trabajos adicionales requieren aprobacion previa.":name==="HCR"?"Firmar hoja de satisfaccion HCR al finalizar el servicio. Incluir inspector en todas las operaciones de clase.":""})),ships:[["Newport","9876543",185],["Yenisei","9234567",245],["Milan","9345678",288],["Sakizaya","9456789",312],["Janiceye","9567890",210],["Jenny Say River","9678901",175],["Wilson","9789012",195],["Pavilion","9890123",228]].map(([name,imo,loa])=>({name,imo,loa})),rates:[["0-100m",0,100,1200,4200,1400,6500],["100-150m",100,150,1600,5800,1900,8800],["150-200m",150,200,2100,7400,2600,11200],["200-250m",200,250,2600,9100,3300,13900],["250-300m",250,300,3200,11200,4100,16800],["300m+",300,999,3900,13800,5200,20600]].map(([range,min,max,inspection,cleaning,propeller,full])=>({range,min,max,inspection,cleaning,propeller,full})),params:{paymentDays:30,standardDiscount:10,exceptionDiscount:15,slaDays:4,incompatibleBarges:["Pabunker 21","Villarreal","Valladolid","Per-Loyal","A-LONG"],
       bargesList:["Bahia One","Bahia Sur","Pabunker 21","Villarreal","Valladolid","Per-Loyal","A-LONG","Tanger Express","Bahia Algeciras","Castillo Sur","Levante One","Bahia Norte"],attachments:"Antifouling certificate, safety brief, permit docs, arrival instructions"},quotes:[{id:"q-newport",ref:"JN-2026-041",requestType:"quote",ship:"Newport",client:"Alfa Ship",eta:"2025-05-19",services:["Hull cleaning","Propeller polishing"],status:"progress",lastAction:"Comence enviado 08:34",lastContact:"2025-05-18",amount:10000,log:["Quote sent","Client confirmed","Permit approved","Diver in water"]},{id:"q-yenisei",ref:"JN-2026-042",requestType:"availability",ship:"Yenisei",client:"MERS",eta:"2025-05-24",services:["Hull cleaning","Class survey support"],status:"confirmed",lastAction:"Disponibilidad confirmada",lastContact:"2025-05-19",amount:14500,log:["Availability confirmed","Client requested quote"]},{id:"q-milan",ref:"JN-2026-043",requestType:"quote",ship:"Milan",client:"Global UWS",eta:"2025-05-28",services:["Hull inspection"],status:"quoted",lastAction:"Sin respuesta 4 dias",lastContact:"2025-05-15",amount:3200,log:["Quote sent"]},{id:"q-sakizaya",ref:"JN-2026-039",requestType:"quote",ship:"Sakizaya",client:"CMA CGM",eta:"2025-05-10",services:["Hull cleaning","Propeller polishing","Sea chest cleaning"],status:"closed",lastAction:"Reporte + factura enviados",lastContact:"2025-05-12",amount:20600,log:["Quote sent","Completed","Report sent","Invoice sent"]}],permits:[{id:"p-newport",ship:"Newport",agent:"Alfa Ship",eta:"2025-05-19",zone:"Fondeo B",status:"Aprobado",jnn:"JNN-2025-118"},{id:"p-yenisei",ship:"Yenisei",agent:"Alfa Ship",eta:"2025-05-24",zone:"TTI",status:"Solicitud enviada",jnn:"JNN-2025-119"},{id:"p-milan",ship:"Milan",agent:"Global UWS",eta:"2025-05-28",zone:"APM",status:"Pendiente de envio",jnn:"JNN-2025-120"}],services:[{id:"svc-newport",quoteId:"q-newport",ship:"Newport",client:"Alfa Ship",eta:"2025-05-19T07:40",status:"progress",opStage:"Buzo en agua",team:"A",barge:"Bahia One",surveyor:"N/A",permit:"Aprobado",reportSent:false,invoiced:false,prearrivalSent:true,photos:"",worksheet:null},{id:"svc-yenisei",quoteId:"q-yenisei",ship:"Yenisei",client:"MERS",eta:"2025-05-24T11:00",status:"confirmed",opStage:"Esperando llegada",team:"B",barge:"Villarreal",surveyor:"Lloyds - Marc L.",permit:"Solicitud enviada",reportSent:false,invoiced:false,prearrivalSent:false,photos:"",worksheet:null},{id:"svc-sakizaya",quoteId:"q-sakizaya",ship:"Sakizaya",client:"CMA CGM",eta:"2025-05-10T10:30",status:"closed",opStage:"Completado",team:"A",barge:"N/A",surveyor:"N/A",permit:"Aprobado",reportSent:true,invoiced:true,prearrivalSent:true,photos:"https://drive.example/sakizaya",worksheet:{start:"09:00",end:"15:00",draft:"12.1",hours:6,work:"Full cleaning",visibility:"Good",notes:"Closed"}}],prearrival:{},pizarraOverrides:{}}}
@@ -187,6 +187,30 @@ function abrirEnvioUrgente(){
     +"<button class='btn' onclick='closeAll()'>Cancelar</button></div>";
   openModal(html2);
 }
+function serviciosConfirmadosTxt(){
+  var svcs=state.services.filter(function(s){
+    return s.status!=="closed"&&s.status!=="cancelled";
+  }).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
+  if(!svcs.length)return"Sin servicios confirmados.";
+  var lines=["***SERVICIOS CONFIRMADOS***",""];
+  svcs.forEach(function(s){
+    var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
+    var svcsStr=(q.services||[]).join(" + ").toUpperCase()||"SERVICIO PENDIENTE";
+    var eta=String(s.eta||"").replace("T"," ").slice(0,16);
+    var etd=String(s.ets||q.ets||"").replace("T"," ").slice(0,16);
+    var etaLine=eta?(etd?"ETB "+eta+" ETD: "+etd:"ETA: "+eta):"";
+    lines.push("***"+(s.ship||"").toUpperCase()+"***");
+    if(etaLine)lines.push(etaLine);
+    if(s.place)lines.push("LUGAR: "+s.place.toUpperCase());
+    lines.push(svcsStr);
+    lines.push("CLIENTE: "+(s.client||q.client||"").toUpperCase());
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+function copyServiciosConfirmados(){
+  try{navigator.clipboard.writeText(serviciosConfirmadosTxt()).then(function(){toast("Texto copiado");});}catch(e){}
+}
 function copyPizarra(){try{navigator.clipboard.writeText(pizarraSemanaTxt()).then(function(){toast("Texto copiado");});}catch(e){}}
 function pizarraSemanaSvc(s){
   var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
@@ -231,15 +255,23 @@ function pizarraSemanaDayCard(s){
 }
 function pizaremana(){
   var now=new Date();
+  // Tab state persisted in sessionStorage (resets on close)
+  var activeTab=sessionStorage.getItem("pizarraTab")||"buzos";
+
+  // Services for week (buzos)
   var svcsWeek=state.services.filter(function(s){
     if(s.status==="closed"||s.status==="cancelled")return false;
     var d=(new Date(s.eta)-now)/(1000*60*60*24);
     return d>=-1&&d<=7;
   }).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
-  var txt=pizarraSemanaTxt();
-  var waUrl="https://wa.me/?text="+encodeURIComponent(txt);
+
+  // Services confirmed (gerencia)
+  var svcsConf=state.services.filter(function(s){
+    return s.status!=="closed"&&s.status!=="cancelled";
+  }).sort(function(a,b){return new Date(a.eta)-new Date(b.eta);});
+
+  // Build week day rows
   var days=Array.from({length:8},function(_,i){var d=new Date(now);d.setDate(now.getDate()+i);return d;});
-  var sLen=svcsWeek.length;
   var dayRows=days.map(function(day){
     var iso=day.toISOString().slice(0,10);
     var items=svcsWeek.filter(function(s){return String(s.eta).slice(0,10)===iso;});
@@ -247,34 +279,66 @@ function pizaremana(){
     var lbl=day.toLocaleDateString("es-ES",{weekday:"long",day:"2-digit",month:"long"});
     return"<div style='margin-bottom:16px'><div style='font-size:11px;font-weight:900;background:var(--navy);color:white;padding:5px 12px;border-radius:5px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em'>"+h(lbl)+" - "+items.length+" servicio"+(items.length!==1?"s":"")+"</div>"+items.map(pizarraSemanaDayCard).join("")+"</div>";
   }).join("");
-  var empty="<div class='empty' style='padding:40px 0;text-align:center'>Sin servicios confirmados para esta semana</div>";
-  // Envios historial (last 7 days only)
+
+  // Build servicios confirmados rows
+  var confRows=svcsConf.length?svcsConf.map(function(s){
+    var q=state.quotes.find(function(x){return x.id===s.quoteId;})||{};
+    var svcsStr=(q.services||[]).join(" + ").toUpperCase()||"SERVICIO PENDIENTE";
+    var eta=String(s.eta||"").replace("T"," ").slice(0,16);
+    var etd=String(s.ets||q.ets||"").replace("T"," ").slice(0,16);
+    return "<div class='card' style='margin-bottom:8px;padding:10px 14px'>"
+      +"<div style='display:flex;justify-content:space-between;align-items:flex-start'>"
+      +"<div><strong style='font-size:15px'>"+h(s.ship)+"</strong><span class='muted' style='font-size:11px;margin-left:8px'>"+badge(s.status)+"</span></div>"
+      +"<div style='text-align:right;font-size:11px;color:var(--muted)'>"+h(eta)+(etd?" — "+h(etd):"")+"</div></div>"
+      +"<div style='font-size:12px;font-weight:900;color:var(--navy);margin:4px 0'>"+h(svcsStr)+"</div>"
+      +"<div style='font-size:11px;color:var(--muted)'>Cliente: <strong>"+h(s.client||q.client||"—")+"</strong>"+(s.place?" · Lugar: "+h(s.place):"")+"</div>"
+      +"</div>";
+  }).join(""):"<div class='empty' style='padding:30px 0;text-align:center'>Sin servicios confirmados</div>";
+
+  // WA URLs
+  var waBuzos="https://wa.me/?text="+encodeURIComponent(pizarraSemanaTxt());
+  var waConf="https://wa.me/?text="+encodeURIComponent(serviciosConfirmadosTxt());
+
+  // Envios historial
   var envios=(state.pizarraEnvios||[]);
   var historialRows=envios.length?envios.map(function(e){
-    return "<div style='display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:5px;font-size:12px'>"
-      +"<div><span style='font-weight:900'>"+h(e.fecha)+" "+h(e.hora)+"</span> <span class='badge "+(e.tipo==="programado"?"confirmed":"quoted")+"'>"+h(e.tipo)+"</span> <span class='muted'>"+h(e.horario)+"</span></div>"
-      +"<div style='color:var(--muted);font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+h(e.comentario)+"</div>"
+    return "<div style='display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:4px;font-size:12px'>"
+      +"<div><strong>"+h(e.fecha)+" "+h(e.hora)+"</strong> <span class='badge "+(e.tipo==="programado"?"confirmed":"quoted")+"'>"+h(e.tipo)+"</span> <span class='muted'>"+h(e.horario)+"</span></div>"
+      +"<div style='color:var(--muted);font-size:11px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+h(e.comentario)+"</div>"
       +"</div>";
   }).join(""):"<p class='muted' style='font-size:13px'>Sin envios registrados esta semana.</p>";
-  // Horario buttons
+
   var horariosBtns=PIZARRA_HORARIOS.map(function(h_){
-    return "<button class='btn' style='min-height:36px' onclick='enviarPizarra(\""+h_.hora+"\",\"\")'>"
+    return "<button class='btn' style='min-height:36px;flex:1' onclick='enviarPizarra(\""+h_.hora+"\",\"\")'>"
       +"<strong style='display:block;font-size:11px'>"+h_.hora+"</strong>"
       +"<span style='font-size:10px;color:var(--muted)'>"+h_.label+"</span>"
       +"</button>";
   }).join("");
-  return "<div class='panel' style='margin-bottom:14px'>"
-    +"<div class='section'><div><h3>Pizarra de la Semana</h3><p>"+sLen+" servicio"+(sLen!==1?"s":"")+" confirmado"+(sLen!==1?"s":"")+" en los proximos 7 dias.</p></div>"
-    +"<div class='toolbar'><a href='"+waUrl+"' target='_blank' class='btn primary' style='text-decoration:none'>Enviar por WhatsApp</a><button class='btn' onclick='copyPizarra()'>Copiar texto</button></div></div>"
-    +(sLen?dayRows:empty)+"</div>"
-    +"<div class='grid two' style='gap:14px'>"
-    // Envios rapidos
-    +"<div class='panel'><div class='section'><div><h3>Envios programados</h3><p>Envia la pizarra al equipo segun el horario establecido. Fuera de horario usa el boton urgente.</p></div></div>"
-    +"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px'>"+horariosBtns+"</div>"
-    +"<button class='btn warn' style='width:100%' onclick='abrirEnvioUrgente()'>Envio urgente / fuera de horario</button></div>"
-    // Historial
-    +"<div class='panel'><div class='section'><div><h3>Historial de envios</h3><p>Ultimos envios de la semana en curso.</p></div><button class='btn' onclick='state.pizarraEnvios=[];save();render();toast(\"Historial limpiado\")'>Limpiar</button></div>"+historialRows+"</div>"
-    +"</div>";
+
+  var isBuzos=activeTab==="buzos";
+
+  return "<div style='display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:14px'>"
+    +"<button onclick='sessionStorage.setItem(\"pizarraTab\",\"buzos\");render()' style='padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:900;border-bottom:"+(isBuzos?"2px solid var(--sea)":"2px solid transparent")+";color:"+(isBuzos?"var(--sea)":"var(--muted)")+";margin-bottom:-2px'>Pizarra Buzos <span style='font-size:11px;font-weight:400'>(equipo)</span></button>"
+    +"<button onclick='sessionStorage.setItem(\"pizarraTab\",\"gerencia\");render()' style='padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:900;border-bottom:"+(!isBuzos?"2px solid var(--sea)":"2px solid transparent")+";color:"+(!isBuzos?"var(--sea)":"var(--muted)")+";margin-bottom:-2px'>Servicios Confirmados <span style='font-size:11px;font-weight:400'>(gerencia)</span></button>"
+    +"</div>"
+    // TAB BUZOS
+    +(isBuzos?
+      "<div class='panel' style='margin-bottom:14px'><div class='section'><div><h3>Trabajos de la Semana</h3><p>"+svcsWeek.length+" servicio"+(svcsWeek.length!==1?"s":"")+" en los proximos 7 dias.</p></div>"
+      +"<div class='toolbar'><a href='"+waBuzos+"' target='_blank' class='btn primary' style='text-decoration:none'>Enviar a buzos (WhatsApp)</a><button class='btn' onclick='copyPizarra()'>Copiar texto</button></div></div>"
+      +(svcsWeek.length?dayRows:"<div class='empty' style='padding:40px 0;text-align:center'>Sin servicios esta semana</div>")
+      +"</div>"
+      +"<div class='grid two' style='gap:14px'>"
+      +"<div class='panel'><div class='section'><div><h3>Envios programados</h3></div></div>"
+      +"<div style='display:flex;gap:8px;margin-bottom:10px'>"+horariosBtns+"</div>"
+      +"<button class='btn warn' style='width:100%' onclick='abrirEnvioUrgente()'>Envio urgente / fuera de horario</button></div>"
+      +"<div class='panel'><div class='section'><div><h3>Historial de envios</h3></div><button class='btn' onclick='state.pizarraEnvios=[];save();render();toast(\"Historial limpiado\")'>Limpiar</button></div>"+historialRows+"</div>"
+      +"</div>"
+    :
+    // TAB GERENCIA
+      "<div class='panel' style='margin-bottom:14px'><div class='section'><div><h3>Servicios Confirmados</h3><p>"+svcsConf.length+" servicio"+(svcsConf.length!==1?"s":"")+" para envio a gerencia.</p></div>"
+      +"<div class='toolbar'><a href='"+waConf+"' target='_blank' class='btn primary' style='text-decoration:none'>Enviar a gerencia (WhatsApp)</a><button class='btn' onclick='copyServiciosConfirmados()'>Copiar texto</button></div></div>"
+      +confRows+"</div>"
+    );
 }
 function divers(){return`<div class="grid two">${["A","B"].map(team=>`<div class="panel"><div class="section"><div><h3>Equipo ${team}</h3><p>Pizarra operacional para buzos.</p></div><button class="btn primary" onclick="toast('Pizarra Equipo ${team} enviada')">Enviar pizarra</button></div><div class="grid">${state.services.filter(s=>s.team===team&&s.status!=="closed").map(s=>`<div class="card"><div class="section"><div><h3>${h(s.ship)}</h3><p>ETA ${h(s.eta.replace("T"," "))} · ${h(jobNo(qsvc(s)))}</p></div>${badge(s.status)}</div><p><strong>Servicios:</strong> ${h((qsvc(s).services||[]).join(", "))}</p><div style="margin:6px 0"><strong style="font-size:12px">Gabarra:</strong> <select style="display:inline;width:auto;min-width:160px;font-size:12px;padding:3px 6px" onchange="const s=state.services.find(x=>x.id=\'${s.id}\');if(s){s.barge=this.value;save();}" >${(state.params.bargesList||[]).map(b=>`<option value="${h(b)}" ${s.barge===b?"selected":""}>${h(b)}</option>`).join("")}<option value="N/A" ${s.barge==="N/A"?"selected":""}>N/A</option></select> ${state.params.incompatibleBarges.includes(s.barge)?'<span class="badge cancelled">Incompatible</span>':'<span class="badge confirmed">OK</span>'}</div><div style="margin:4px 0"><strong style="font-size:12px">Perspectivas:</strong> <input style="display:inline;width:auto;font-size:12px;padding:3px 6px;min-width:180px" placeholder="ETB / duración estimada" value="${h(s.bargeEtb||"")}" onchange="const s=state.services.find(x=>x.id=\'${s.id}\');if(s){s.bargeEtb=this.value;save();}"></div><p><strong>Surveyor:</strong> ${h(s.surveyor)}</p><span class="badge ${s.permit==="Aprobado"?"confirmed":"quoted"}">${h(s.permit)}</span></div>`).join("")||'<div class="empty">Sin asignaciones.</div>'}</div></div>`).join("")}</div>`}function active(){const stages=["Esperando llegada","Movilizando","Buzo en agua","Completado"];return`<div class="grid">${state.services.filter(s=>["progress","confirmed"].includes(s.status)).map(s=>`<div class="panel"><div class="section"><div><h3>${h(s.ship)} · ${h(jobNo(qsvc(s)))}</h3><p>${h(s.client)} · ETA ${h(s.eta.replace("T"," "))} · ${Math.max(0,daysUntil(s.eta))} dias</p></div>${badge(s.status)}</div>${state.params.incompatibleBarges.includes(s.barge)?`<div class="alert danger">Gabarra incompatible: ${h(s.barge)}. Reasignar antes de movilizar.</div>`:""}<div class="stage-grid">${stages.map(st=>`<button class="stage ${s.opStage===st?"active":""}" data-action="stage" data-id="${s.id}" data-stage="${st}">${st}</button>`).join("")}</div><div class="toolbar"><button class="btn primary" data-action="email" data-kind="commence" data-id="${s.id}">Enviar Comence</button><button class="btn good" data-action="email" data-kind="completed" data-id="${s.id}">Enviar Completed</button><button class="btn" data-action="email" data-kind="arrival" data-id="${s.id}">Instrucciones de Llegada</button></div></div>`).join("")}</div>`}
 function worksheets(){return`<div class="grid two"><div class="panel"><div class="section"><div><h3>Worksheet operativo</h3><p>Horas, calado y trabajos realizados.</p></div></div><label>Servicio<select id="wsSvc">${state.services.map(s=>`<option value="${s.id}">${h(s.ship)} · ${h(s.client)}</option>`).join("")}</select></label><div class="row"><label>Hora inicio<input id="wsStart" type="time" value="08:15"></label><label>Hora fin<input id="wsEnd" type="time" value="13:45"></label></div><div class="row"><label>Calado<input id="wsDraft" value="10.8"></label><label>Visibilidad<input id="wsVis" value="Moderate, 3-4m"></label></div><label>Trabajos realizados<textarea id="wsWork">Hull cleaning completed. Propeller polished.</textarea></label><button class="btn primary" data-action="save-ws">Guardar worksheet</button></div><div class="panel"><div class="section"><div><h3>Servicios</h3><p>Estado de worksheets.</p></div></div>${servicesTable(state.services)}</div></div>`}function finalReports(){const rows=state.services.filter(s=>s.opStage==="Completado"||s.status==="closed"||s.worksheet);return`<div class="grid two">${rows.map(s=>`<div class="panel"><div class="section"><div><h3>${h(s.ship)} · Final Report</h3><p>${h(s.client)} · ${h(jobNo(qsvc(s)))}</p></div>${s.reportSent?badge("report"):badge("progress")}</div><div class="preview" style="min-height:260px"><h3>Underwater Works Report</h3><p><strong>Vessel:</strong> ${h(s.ship)} · <strong>Draft:</strong> ${h(s.worksheet?.draft||"Pending")}</p><p><strong>Works:</strong> ${h(s.worksheet?.work||"Worksheet pending.")}</p><p><strong>Photos:</strong> ${h(s.photos||"Pending folder link")}</p></div><button class="btn primary" data-action="email" data-kind="report" data-id="${s.id}">Enviar Reporte Final</button></div>`).join("")||'<div class="empty">Completa un worksheet para habilitar reportes.</div>'}</div>`}function invoiceAmount(s){const q=qsvc(s),c=client(s.client),base=q.amount||0,disc=c?.special?state.params.exceptionDiscount:state.params.standardDiscount,comm=c?.commission||0;return Math.round(base*(1-disc/100)*(1+comm/100))}function invoicePending(){const rows=state.services.filter(s=>s.reportSent&&!s.invoiced);return`<div class="panel">${rows.length?`<table><thead><tr><th>Servicio</th><th>Cliente</th><th>Base</th><th>Total</th><th>Accion</th></tr></thead><tbody>${rows.map(s=>`<tr><td><strong>${h(s.ship)}</strong><br><span class="muted mono">${h(jobNo(qsvc(s)))}</span></td><td>${h(s.client)}</td><td class="money">${money.format(qsvc(s).amount||0)}</td><td class="money">${money.format(invoiceAmount(s))}</td><td><button class="btn primary" data-action="accounting" data-id="${s.id}">Enviar a Contabilidad</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">No hay pendientes de factura.</div>'}</div>`}function history(){return`<div class="panel"><table><thead><tr><th>Barco</th><th>Cliente</th><th>Ref</th><th>Reporte</th><th>Factura</th><th>Total</th></tr></thead><tbody>${state.services.filter(s=>s.status==="closed"||s.invoiced).map(s=>`<tr><td>${h(s.ship)}</td><td>${h(s.client)}</td><td class="mono">${h(jobNo(qsvc(s)))}</td><td>${s.reportSent?"Enviado":"Pendiente"}</td><td>${s.invoiced?"Enviada":"Pendiente"}</td><td class="money">${money.format(invoiceAmount(s))}</td></tr>`).join("")}</tbody></table></div>`}function rates(){return`<div class="panel"><div class="section"><div><h3>Tarifas por rango de eslora</h3><p>Editable y persistente.</p></div><button class="btn primary" data-action="save-rates">Guardar tarifas</button></div><table><thead><tr><th>Rango</th><th>Inspeccion</th><th>Limpieza</th><th>Propeller</th><th>Completo</th></tr></thead><tbody>${state.rates.map((r,i)=>`<tr><td class="mono">${r.range}</td>${["inspection","cleaning","propeller","full"].map(k=>`<td><input data-rate="${i}:${k}" type="number" value="${r[k]}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>`}function uwClientReqsBadges(c){
@@ -621,7 +685,7 @@ function compactMenu(){
   Object.assign(titles,{
     "quote-new":["Cotizador","Analisis con IA, disponibilidad y cotizaciones desde un solo flujo."],
     quotes:["Operaciones","Expedientes vivos: cotizados, nominados, en curso o pendientes de cierre."],
-    "pizarra-semana":["Pizarra de la Semana","Trabajos confirmados proximos 7 dias para el equipo de buceo."],
+    "pizarra-semana":["Pizarra","Selecciona la pizarra a enviar: Buzos (equipo) o Servicios Confirmados (gerencia)."],
     history:["Registros","Cotizaciones ganadas/perdidas y expedientes facturados o cerrados."]
   });
 }
