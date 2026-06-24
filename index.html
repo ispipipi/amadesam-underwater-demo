@@ -66,7 +66,13 @@ function portMap(){
   const lat=isHuelva?"37.1025":"36.1399", lon=isHuelva?"-6.8547":"-5.4206";
   const label=isHuelva?"Huelva ESHUV":"Algeciras ESALG";
   const link=isHuelva?"https://www.vesselfinder.com/ports/ESHUV001":"https://www.vesselfinder.com/ports/ESALG001";
-  const srcdoc=`<html><body style="margin:0;overflow:hidden;background:#dff2f6"><script>var width="100%";var height="340";var latitude="${lat}";var longitude="${lon}";var zoom="13";var names=true;<\/script><script src="https://www.vesselfinder.com/aismap.js"><\/script></body></html>`;
+  const srcdoc=`<html><body style="margin:0;overflow:hidden;background:#dff2f6"><script>var width="100%";var height="340";var latitude="${lat}";var longitude="${lon}";var zoom="13";var names=true;<\/script><script src="https://www.vesselfinder.com/aismap.js"><\/script>
+<div class="agencias-app" style="display:none;min-height:100vh">
+  <aside class="side"><div class="brand"><div class="mark logo-mark"><img src="amadesam-logo.png" alt="AMADESAM"></div><div><h1>AMADESAM</h1><p id="agPortLabel">Agency Operations · Huelva</p></div></div><nav class="nav" id="agNav"></nav><div class="foot">Agency Operations Management System · Puerto de Huelva.</div><div style="margin-top:10px"><button class="btn" style="width:100%;font-size:11px" onclick="showBusiness('home')">🔄 Cambiar negocio</button></div></div>
+  <div class="main"><header class="head"><div><p class="eyebrow" id="agEyebrow">AMADESAM · AGENCY OPERATIONS</p><h2 id="agTitle">Operations Board</h2><p class="muted" id="agSubtitle">Todos los expedientes activos del puerto.</p></div><div id="agClock" style="text-align:right;font-size:22px;font-weight:900;font-family:monospace"></div></header><div id="agView" style="padding:0 24px 32px"></div></div>
+  <div class="drawer-bg" id="agDrawerBg"><div class="drawer" id="agDrawer"></div></div>
+  <div class="modal-bg" id="agModalBg"><div class="modal" id="agModal"></div></div>
+</div></body></html>`;
   return`<iframe class="vessel-frame" title="VesselFinder · ${label}" loading="lazy" srcdoc="${h(srcdoc)}"></iframe><div class="map-credit"><span>Fuente AIS: VesselFinder · ${label}</span><a href="${link}" target="_blank" rel="noopener">Abrir en VesselFinder</a></div>`;
 }
 function casePortMap(imo){
@@ -1215,7 +1221,7 @@ function lSave(){localStorage.setItem(LKEY,JSON.stringify(lState))}
 function lNextJob(){const nums=lState.services.map(s=>Number(String(s.jobNo).split("-").pop())).filter(Boolean);return`LN-2026-${String(Math.max(...nums,105)+1).padStart(3,"0")}`}
 function initBusinessShell(){
   if($("#businessHome"))return;
-  document.body.insertAdjacentHTML("afterbegin",`<section id="businessHome" class="business-home"><div class="business-wrap"><div class="business-head"><div><div class="business-brand"><div class="home-logo"><img src="amadesam-logo-full-white.png" alt="AMADESAM"></div><p class="eyebrow">Maritime Operations</p></div><h1>Elige el negocio operativo</h1><p>Demo visual para navegar entre Underwater, Lanchas y futuras operaciones de Agencias, manteniendo cada flujo separado y claro.</p></div><div class="business-kpis"><div class="mini-kpi"><strong>3</strong><span class="muted">lineas de negocio</span></div><div class="mini-kpi"><strong>${lState.fleet.length}</strong><span class="muted">lanchas configuradas</span></div><div class="mini-kpi"><strong>${lState.services.length}</strong><span class="muted">servicios demo</span></div></div></div><div class="module-grid"><button class="module-card" data-business="underwater"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="sea-line l3"></span><span class="ship-shape"></span></div><h2>Underwater</h2><p>Cotizador, expedientes, permisos, buzos, OCR operativo, reportes y facturacion de servicios submarinos.</p></div><div class="toolbar"><span class="badge progress">Operativo</span><span class="btn primary">Abrir Underwater</span></div></button><button class="module-card" data-business="lanchas"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="sea-line l3"></span><span class="launch-shape"></span></div><h2>Lanchas</h2><p>Servicios de lancha, flota, disponibilidad, despacho a patron, albaranes y OCR para cierre operativo.</p></div><div class="toolbar"><span class="badge confirmed">Nuevo</span><span class="btn primary">Abrir Lanchas</span></div></button><button class="module-card locked" data-business="agencias"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="agency-shape"></span></div><h2>Agencias</h2><p>Linea preparada para proximamente: escalas, documentacion, consignacion y coordinacion portuaria.</p></div><div class="toolbar"><span class="badge quoted">Proximamente</span><span class="btn">Ver estado</span></div></button></div></div></section>`);
+  document.body.insertAdjacentHTML("afterbegin",`<section id="businessHome" class="business-home"><div class="business-wrap"><div class="business-head"><div><div class="business-brand"><div class="home-logo"><img src="amadesam-logo-full-white.png" alt="AMADESAM"></div><p class="eyebrow">Maritime Operations</p></div><h1>Elige el negocio operativo</h1><p>Demo visual para navegar entre Underwater, Lanchas y futuras operaciones de Agencias, manteniendo cada flujo separado y claro.</p></div><div class="business-kpis"><div class="mini-kpi"><strong>3</strong><span class="muted">lineas de negocio</span></div><div class="mini-kpi"><strong>${lState.fleet.length}</strong><span class="muted">lanchas configuradas</span></div><div class="mini-kpi"><strong>${lState.services.length}</strong><span class="muted">servicios demo</span></div></div></div><div class="module-grid"><button class="module-card" data-business="underwater"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="sea-line l3"></span><span class="ship-shape"></span></div><h2>Underwater</h2><p>Cotizador, expedientes, permisos, buzos, OCR operativo, reportes y facturacion de servicios submarinos.</p></div><div class="toolbar"><span class="badge progress">Operativo</span><span class="btn primary">Abrir Underwater</span></div></button><button class="module-card" data-business="lanchas"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="sea-line l3"></span><span class="launch-shape"></span></div><h2>Lanchas</h2><p>Servicios de lancha, flota, disponibilidad, despacho a patron, albaranes y OCR para cierre operativo.</p></div><div class="toolbar"><span class="badge confirmed">Nuevo</span><span class="btn primary">Abrir Lanchas</span></div></button><button class="module-card" data-business="agencias"><div><div class="module-visual"><span class="sea-line l1"></span><span class="sea-line l2"></span><span class="agency-shape"></span></div><h2>Agencias</h2><p>Operations Board, escalas Husbandry / Commercial / Bunker, Crewing, PDA/FDA y gestion documental portuaria.</p></div><div class="toolbar"><span class="badge confirmed">Operativo</span><span class="btn primary">Abrir Agencias</span></div></button></div></div></section>`);
   document.body.insertAdjacentHTML("beforeend",`<button class="btn switch-business" data-business="home">Cambiar negocio</button><div id="lanchasApp" class="lanchas-app"><aside class="side"><div class="brand"><div class="mark logo-mark"><img src="amadesam-logo.png" alt="AMADESAM"></div><div><h1>AMADESAM</h1><p>Lanchas · multi-puerto</p></div></div><nav class="nav" id="lNav"></nav><div class="foot">Demo funcional para servicios de lancha: puerto, VesselFinder, expediente unico, OCR, flota, albaran y cierre.</div><div style="margin-top:10px"><button class="btn" style="width:100%;font-size:11px" data-l-action="reset-port">🔄 Cambiar puerto</button></div></aside><main class="main"><div class="top"><div><p class="eyebrow">AMADESAM · Lanchas</p><h2 id="lTitle">Dashboard</h2><p class="sub" id="lSubtitle">Planificacion de servicios portuarios por lancha, patron, capacidad y estado operativo.</p></div><div class="clock"><strong id="lClock">--:-- UTC+2</strong><span>Hora Madrid · puerto activo</span></div></div><div id="lanchasView"></div></main></div>`);
 }
 function lShowPortSelector(){
@@ -1263,7 +1269,7 @@ function showBusiness(kind){
   document.body.classList.remove("business-home-open","business-underwater","business-lanchas");
   if(kind==="underwater"){document.body.classList.add("business-underwater");uwShowPortSelector();toast("Underwater abierto")}
   else if(kind==="lanchas"){document.body.classList.add("business-lanchas");lShowPortSelector();toast("Lanchas abierto")}
-  else if(kind==="agencias"){document.body.classList.add("business-home-open");toast("Agencias estara disponible proximamente")}
+  else if(kind==="agencias"){document.body.classList.add("business-agencias");renderAgencias();toast("Agencias abierto")}
   else document.body.classList.add("business-home-open");
 }
 function renderLNav(){
@@ -2061,6 +2067,275 @@ renderLanchas=function(){
   $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,calendar:lCalendarView,records:lRecordsView,clients:lClientsView}[lState.current]||lDashboard)();
 }
 function updateLClock(){if($("#lClock"))$("#lClock").textContent=new Date().toLocaleTimeString("es-ES",{timeZone:"Europe/Madrid",hour:"2-digit",minute:"2-digit"})+" UTC+2"}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENCIAS MODULE — AOMS (Agency Operations Management System)
+// ═══════════════════════════════════════════════════════════════
+const AG_KEY="amadesam-agencias-v1";
+const agToday=new Date();
+
+function agLoad(){try{const x=JSON.parse(localStorage.getItem(AG_KEY));if(x&&x.files)return x;}catch(e){}return agSeed();}
+function agSave(){localStorage.setItem(AG_KEY,JSON.stringify(agState));}
+function ag$(s){return document.querySelector(s);}
+
+var agState=agLoad();
+
+function agSeed(){
+  return{
+    current:"board",
+    files:[
+      {id:"EXP-2026-001",vessel:"NORDIC JADE",type:"Husbandry",client:"Alphaship",eta:"2026-06-23T08:00",etb:"2026-06-23T14:00",etd:"2026-06-24T06:00",berth:"Muelle Norte",status:"nominated",port:"Huelva",log:["Appointment received","Nomination confirmed"],docs:[]},
+      {id:"EXP-2026-002",vessel:"ATLANTIC CARRIER",type:"Commercial",client:"Copetro Marine",eta:"2026-06-24T10:00",etb:"2026-06-25T00:00",etd:"2026-06-26T12:00",berth:"Muelle Sur",status:"in_port",port:"Huelva",cargo:"Fertilizers 8,500 MT",log:["Appointment received","PDA sent","Vessel arrived"],docs:[]},
+      {id:"EXP-2026-003",vessel:"OCEAN PIONEER",type:"Bunker",client:"Berge Maritimo",eta:"2026-06-25T06:00",etb:"2026-06-25T10:00",etd:"2026-06-25T18:00",berth:"Fondeo Exterior",status:"quoted",port:"Huelva",bunker:"CEPSA 200 MT LSFO",log:["Inquiry received","PDA sent"],docs:[]},
+      {id:"TBC-001",vessel:"KRISTIN C",type:"Husbandry",client:"HCR",eta:"2026-06-27T00:00",etb:"",etd:"",berth:"Por confirmar",status:"pending",port:"Huelva",log:["Appointment received - pending nomination"],docs:[]}
+    ],
+    clients:[
+      {name:"Alphaship",type:"Agent",email:"ops@alphaship.es",phone:"+34956000002"},
+      {name:"Copetro Marine",type:"Direct",email:"ops@copetro.com",phone:"+34959000001"},
+      {name:"Berge Maritimo",type:"Broker",email:"ops@berge.es",phone:"+34956000004"},
+      {name:"HCR",type:"Agent",email:"ops@hcr.es",phone:"+34956000005"}
+    ]
+  };
+}
+
+function agH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function agBadge(status){
+  var map={quoted:["quoted","Quoted"],nominated:["progress","Nominated"],in_port:["confirmed","In Port"],sailed:["report","Sailed"],invoiced:["","Invoiced"],pending:["","Pending"]};
+  var b=map[status]||["","—"];
+  return"<span class='badge "+b[0]+"'>"+b[1]+"</span>";
+}
+
+function agTypeBadge(type){
+  var map={Husbandry:"#087ea4",Commercial:"#10b981",Bunker:"#f59e0b"};
+  return"<span style='background:"+(map[type]||"#6b7280")+";color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:900'>"+agH(type)+"</span>";
+}
+
+function agOpenDrawer(content){
+  ag$('#agDrawer').innerHTML=content;
+  ag$('#agDrawerBg').classList.add('open');
+  agBindDrawer();
+}
+function agCloseAll(){ag$('#agDrawerBg').classList.remove('open');ag$('#agModalBg').classList.remove('open');}
+function agOpenModal(content){ag$('#agModal').innerHTML=content;ag$('#agModalBg').classList.add('open');}
+
+function agBindDrawer(){
+  ag$('#agDrawerBg').onclick=function(e){if(e.target===ag$('#agDrawerBg'))agCloseAll();};
+  ag$('#agModalBg').onclick=function(e){if(e.target===ag$('#agModalBg'))agCloseAll();};
+}
+
+// ── VIEWS ──
+function agBoard(){
+  var files=agState.files;
+  var statuses=["pending","quoted","nominated","in_port","sailed","invoiced"];
+  var rows=files.map(function(f){
+    return"<tr data-agfile='"+agH(f.id)+"' style='cursor:pointer'>"
+      +"<td class='mono'><strong>"+agH(f.id)+"</strong></td>"
+      +"<td><strong>"+agH(f.vessel)+"</strong></td>"
+      +"<td>"+agTypeBadge(f.type)+"</td>"
+      +"<td class='muted' style='font-size:12px'>"+agH(f.client)+"</td>"
+      +"<td class='mono' style='font-size:12px'>"+agH(String(f.eta||"").slice(0,16).replace("T"," "))+"</td>"
+      +"<td class='mono' style='font-size:12px'>"+agH(String(f.etb||"—").slice(0,16).replace("T"," "))+"</td>"
+      +"<td class='mono' style='font-size:12px'>"+agH(String(f.etd||"—").slice(0,16).replace("T"," "))+"</td>"
+      +"<td>"+agH(f.berth||"—")+"</td>"
+      +"<td>"+agBadge(f.status)+"</td>"
+      +"<td class='muted' style='font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+agH((f.log||[]).slice(-1)[0]||"")+"</td>"
+      +"</tr>";
+  }).join("");
+  return"<div class='panel'>"
+    +"<div class='section'><div><h3>Operations Board</h3><p>"+files.length+" expedientes activos · Puerto de Huelva</p></div>"
+    +"<div class='toolbar'>"
+    +"<button class='btn primary' onclick='agNewFile()'>+ New File</button>"
+    +"<select onchange='agState.typeFilter=this.value;renderAgencias()' style='max-width:160px'>"
+    +"<option value=''>All Types</option>"
+    +"<option value='Husbandry'>Husbandry</option>"
+    +"<option value='Commercial'>Commercial</option>"
+    +"<option value='Bunker'>Bunker</option>"
+    +"</select>"
+    +"<select onchange='agState.statusFilter=this.value;renderAgencias()' style='max-width:160px'>"
+    +"<option value=''>All Statuses</option>"
+    +"<option value='pending'>Pending</option>"
+    +"<option value='quoted'>Quoted</option>"
+    +"<option value='nominated'>Nominated</option>"
+    +"<option value='in_port'>In Port</option>"
+    +"<option value='sailed'>Sailed</option>"
+    +"</select>"
+    +"</div></div>"
+    +"<div style='overflow:auto'><table style='min-width:1100px'><thead><tr>"
+    +"<th>File No.</th><th>Vessel</th><th>Type</th><th>Client</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Berth</th><th>Status</th><th>Last Update</th>"
+    +"</tr></thead><tbody>"+rows+"</tbody></table></div></div>";
+}
+
+function agFileDetail(id){
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(!f)return"<p>File not found</p>";
+  var statusOptions=["pending","quoted","nominated","in_port","sailed","invoiced"].map(function(s){
+    return"<option value='"+s+"' "+(f.status===s?"selected":"")+">"+s.replace("_"," ").toUpperCase()+"</option>";
+  }).join("");
+  var logItems=(f.log||[]).map(function(l){return"<div style='font-size:12px;padding:4px 0;border-bottom:1px solid var(--line)'>"+agH(l)+"</div>";}).join("");
+  var docItems=(f.docs||[]).length?(f.docs||[]).map(function(d,i){
+    return"<div style='display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border:1px solid var(--line);border-radius:5px;margin-bottom:4px;font-size:12px'>"
+    +"<span><strong>"+agH(d.name)+"</strong> <span class='muted'>"+agH(d.type)+"</span></span>"
+    +"<button class='btn red' style='min-height:24px;padding:2px 8px;font-size:11px' data-agid='"+id+"' data-agidx='"+i+"' onclick='agDelDoc(this.dataset.agid,+this.dataset.agidx)'>✕</button></div>";
+  }).join(""):"<p class='muted' style='font-size:12px'>No documents attached.</p>";
+
+  return"<div class='section'><div><h3>"+agH(f.id)+" · "+agH(f.vessel)+"</h3><p>"+agTypeBadge(f.type)+" "+agBadge(f.status)+"</p></div><button class='btn' onclick='agCloseAll()'>X</button></div>"
+    +"<div class='grid two'>"
+    // Col 1 - Operation details
+    +"<div>"
+    +"<div class='card'><h3 style='font-size:13px;margin-bottom:10px'>Operation Details</h3>"
+    +"<div class='grid two' style='gap:8px'>"
+    +"<label style='margin:0;font-size:12px'>ETA<input value='"+agH(String(f.eta||"").slice(0,16))+"' type='datetime-local' data-agid='"+id+"' data-agfield='eta' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<label style='margin:0;font-size:12px'>ETB<input value='"+agH(String(f.etb||"").slice(0,16))+"' type='datetime-local' data-agid='"+id+"' data-agfield='etb' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<label style='margin:0;font-size:12px'>ETD<input value='"+agH(String(f.etd||"").slice(0,16))+"' type='datetime-local' data-agid='"+id+"' data-agfield='etd' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<label style='margin:0;font-size:12px'>Berth<input value='"+agH(f.berth||"")+"' data-agid='"+id+"' data-agfield='berth' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<label style='margin:0;font-size:12px'>Client<input value='"+agH(f.client||"")+"' data-agid='"+id+"' data-agfield='client' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<label style='margin:0;font-size:12px'>Port<input value='"+agH(f.port||"Huelva")+"' data-agid='"+id+"' data-agfield='port' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"</div>"
+    +(f.type==="Bunker"?"<label style='font-size:12px;margin-top:8px'>Bunker Details<input value='"+agH(f.bunker||"")+"' placeholder='Ej: CEPSA 200 MT LSFO' data-agid='"+id+"' data-agfield='bunker' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>":"")
+    +(f.type==="Commercial"?"<label style='font-size:12px;margin-top:8px'>Cargo<input value='"+agH(f.cargo||"")+"' placeholder='Ej: Fertilizers 8,500 MT' data-agid='"+id+"' data-agfield='cargo' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>":"")
+    +"</div>"
+    // Status + Log
+    +"<div class='card' style='margin-top:12px'><div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'><h3 style='font-size:13px;margin:0'>Status & Log</h3></div>"
+    +"<label style='font-size:12px'>Update Status<select data-agid='"+id+"' data-agfield='status' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value);agSave();renderAgencias();'>"+statusOptions+"</select></label>"
+    +"<div style='margin-top:10px;max-height:160px;overflow-y:auto'>"+logItems+"</div>"
+    +"<div style='display:flex;gap:8px;margin-top:8px'><input id='agLogEntry_"+id+"' placeholder='Add log entry...' style='flex:1;font-size:12px'>"
+    +"<button class='btn good' data-aglogid='"+id+"' onclick='agAddLog(this.dataset.aglogid)'>Add</button></div>"
+    +"</div>"
+    +"</div>"
+    // Col 2 - Documents
+    +"<div>"
+    +"<div class='card'><h3 style='font-size:13px;margin-bottom:10px'>Documents</h3>"
+    +docItems
+    +"<div style='display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)'>"
+    +"<input id='agDocName_"+id+"' placeholder='Document name...' style='flex:1;font-size:12px'>"
+    +"<select id='agDocType_"+id+"' style='min-width:120px;font-size:12px'><option>PDA</option><option>FDA</option><option>SOF</option><option>Appointment</option><option>Pre-Arrival</option><option>Service List</option><option>Invoice</option><option>Other</option></select>"
+    +"<button class='btn good' data-agdocid='"+id+"' onclick='agAddDoc(this.dataset.agdocid)'>Attach</button></div></div>"
+    // PDA summary
+    +"<div class='card' style='margin-top:12px'><h3 style='font-size:13px;margin-bottom:10px'>PDA / Financial</h3>"
+    +"<div style='display:grid;grid-template-columns:1fr 1fr;gap:8px'>"
+    +"<div style='background:#f8fbfc;border-radius:6px;padding:10px;text-align:center'><p class='muted' style='font-size:10px;margin:0'>Estimated Revenue</p><strong style='font-size:18px;color:var(--sea)'>€ "+agH(f.pdaAmount||"TBC")+"</strong></div>"
+    +"<div style='background:#f8fbfc;border-radius:6px;padding:10px;text-align:center'><p class='muted' style='font-size:10px;margin:0'>Status</p><strong style='font-size:14px'>"+agBadge(f.status)+"</strong></div>"
+    +"</div>"
+    +"<label style='font-size:12px;margin-top:10px'>PDA Amount (€)<input type='number' value='"+agH(f.pdaAmount||"")+"' placeholder='0.00' data-agid='"+id+"' data-agfield='pdaAmount' onchange='agUpdateFile(this.dataset.agid,this.dataset.agfield,this.value)'></label>"
+    +"<div class='toolbar' style='margin-top:10px'>"
+    +"<button class='btn primary' data-agemailid='"+id+"' data-agemailtype='pda' onclick='agSendEmail(this.dataset.agemailid,this.dataset.agemailtype)'>Send PDA</button>"
+    +"<button class='btn' data-agemailid='"+id+"' data-agemailtype='appointment' onclick='agSendEmail(this.dataset.agemailid,this.dataset.agemailtype)'>Appointment Conf.</button>"
+    +"</div></div>"
+    +"</div>"
+    +"</div>";
+}
+
+function agOpenFile(id){
+  agOpenDrawer(agFileDetail(id));
+}
+function agUpdateFile(id,field,value){
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(f){f[field]=value;agSave();}
+}
+function agAddLog(id){
+  var input=ag$('#agLogEntry_'+id);
+  if(!input||!input.value.trim())return;
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(f){f.log=f.log||[];f.log.push(input.value.trim());agSave();agOpenFile(id);}
+}
+function agAddDoc(id){
+  var name=ag$('#agDocName_'+id);
+  var type=ag$('#agDocType_'+id);
+  if(!name||!name.value.trim())return;
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(f){f.docs=f.docs||[];f.docs.push({name:name.value.trim(),type:type?type.value:"Other",date:new Date().toLocaleDateString("es-ES")});agSave();agOpenFile(id);}
+}
+function agDelDoc(id,idx){
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(f&&f.docs){f.docs.splice(idx,1);agSave();agOpenFile(id);}
+}
+function agSendEmail(id,type){
+  var f=agState.files.find(function(x){return x.id===id;});
+  if(!f)return;
+  var msg=type==="pda"?"PDA sent to "+f.client+" for "+f.vessel:"Appointment confirmation sent to "+f.client;
+  f.log=f.log||[];f.log.push(msg);agSave();
+  alert("Simulated: "+msg);
+}
+function agNewFile(){
+  var num="EXP-2026-"+(String(agState.files.length+1).padStart(3,"0"));
+  var html2="<div class='section'><div><h3>New File · "+num+"</h3></div><button class='btn' onclick='agCloseAll()'>X</button></div>"
+    +"<div class='grid two'><label>Vessel Name<input id='ngVessel' placeholder='VESSEL NAME'></label>"
+    +"<label>Client<select id='ngClient'>"+agState.clients.map(function(c){return"<option>"+agH(c.name)+"</option>";}).join("")+"</select></label>"
+    +"<label>Operation Type<select id='ngType'><option>Husbandry</option><option>Commercial</option><option>Bunker</option></select></label>"
+    +"<label>ETA<input id='ngEta' type='datetime-local'></label>"
+    +"<label>Berth<input id='ngBerth' placeholder='Muelle / Fondeo'></label>"
+    +"<label>Port<input id='ngPort' value='Huelva'></label></div>"
+    +"<label>Initial Notes<textarea id='ngNotes' placeholder='Appointment details, cargo, special instructions...' style='min-height:80px'></textarea></label>"
+    +"<div class='toolbar'><button class='btn primary' onclick='agSaveNewFile(window._agNewNum||'')'>Create File</button><button class='btn' onclick='agCloseAll()'>Cancel</button></div>";
+  window._agNewNum=num;agOpenModal(html2);
+}
+function agSaveNewFile(num){
+  var vessel=(ag$('#ngVessel')||{}).value||"";
+  if(!vessel.trim()){alert("Enter vessel name");return;}
+  var f={id:num,vessel:vessel.trim().toUpperCase(),type:(ag$('#ngType')||{}).value||"Husbandry",client:(ag$('#ngClient')||{}).value||"",eta:(ag$('#ngEta')||{}).value||"",etb:"",etd:"",berth:(ag$('#ngBerth')||{}).value||"",port:(ag$('#ngPort')||{}).value||"Huelva",status:"quoted",log:["File created. "+((ag$('#ngNotes')||{}).value||"")],docs:[]};
+  agState.files.push(f);agSave();agCloseAll();renderAgencias();
+}
+
+function agClients(){
+  var rows=agState.clients.map(function(c,i){
+    return"<tr><td><strong>"+agH(c.name)+"</strong></td><td>"+agH(c.type)+"</td><td class='muted' style='font-size:12px'>"+agH(c.email)+"</td><td class='muted' style='font-size:12px'>"+agH(c.phone)+"</td></tr>";
+  }).join("");
+  return"<div class='panel'><div class='section'><div><h3>Client Master Data</h3><p>Agency agreements, contacts and tariffs.</p></div><button class='btn primary' onclick='agNewClient()'>+ Add Client</button></div>"
+    +"<table><thead><tr><th>Client</th><th>Type</th><th>Email</th><th>Phone</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
+}
+function agNewClient(){
+  var html2="<div class='section'><div><h3>New Client</h3></div><button class='btn' onclick='agCloseAll()'>X</button></div>"
+    +"<div class='grid two'><label>Name<input id='ncName'></label><label>Type<select id='ncType'><option>Agent</option><option>Direct</option><option>Broker</option></select></label>"
+    +"<label>Email<input id='ncEmail' type='email'></label><label>Phone<input id='ncPhone'></label></div>"
+    +"<div class='toolbar'><button class='btn primary' onclick='agSaveClient()'>Save</button><button class='btn' onclick='agCloseAll()'>Cancel</button></div>";
+  agOpenModal(html2);
+}
+function agSaveClient(){
+  agState.clients.push({name:(ag$('#ncName')||{}).value||"",type:(ag$('#ncType')||{}).value||"Agent",email:(ag$('#ncEmail')||{}).value||"",phone:(ag$('#ncPhone')||{}).value||""});
+  agSave();agCloseAll();renderAgencias();
+}
+
+// ── NAV + RENDER ──
+const agGroups=[
+  ["Operations",[["board","Operations Board","OB"],["archive","Archive","AR"]]],
+  ["Masters",[["ag-clients","Clients","CL"],["ag-suppliers","Suppliers","SP"]]]
+];
+const agTitles={
+  board:["Operations Board","All active files · Port of Huelva."],
+  archive:["Operations Archive","Invoiced and closed files."],
+  "ag-clients":["Client Master Data","Agency agreements, contacts and tariffs."],
+  "ag-suppliers":["Supplier Master Data","Suppliers, services and agreed tariffs."]
+};
+
+function renderAgNav(){
+  ag$('#agNav').innerHTML=agGroups.map(function(g){
+    return"<div class='nav-title'>"+g[0]+"</div>"+g[1].map(function(item){
+      return"<button class='"+(agState.current===item[0]?"active":"")+"' data-agcurrent='"+item[0]+"' onclick='agState.current=this.dataset.agcurrent;renderAgencias()'><span class='ico'>"+item[2]+"</span><span>"+item[1]+"</span></button>";
+    }).join("");
+  }).join("");
+}
+
+function renderAgencias(){
+  agState=agState||agLoad();
+  renderAgNav();
+  var t=agTitles[agState.current]||agTitles.board;
+  ag$('#agTitle').textContent=t[0];
+  ag$('#agSubtitle').textContent=t[1];
+  var views={board:agBoard,"ag-clients":agClients,archive:function(){return"<div class='panel'><h3>Archive</h3><p class='muted'>Invoiced files will appear here.</p></div>";},
+    "ag-suppliers":function(){return"<div class='panel'><h3>Supplier Master Data</h3><p class='muted'>Suppliers, services and agreed tariffs. Coming in next sprint.</p></div>";}};
+  ag$('#agView').innerHTML=(views[agState.current]||agBoard)();
+  // wire file row clicks already handled via onclick in HTML
+  ag$('#agDrawerBg').onclick=function(e){if(e.target===ag$('#agDrawerBg'))agCloseAll();};
+  ag$('#agModalBg').onclick=function(e){if(e.target===ag$('#agModalBg'))agCloseAll();};
+  document.querySelectorAll('[data-agfile]').forEach(function(row){
+    row.onclick=function(e){if(!e.target.closest('button')&&!e.target.closest('select'))agOpenFile(row.dataset.agfile);};
+  });
+  // update clock
+  var clk=ag$('#agClock');
+  if(clk)clk.textContent=new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})+" UTC+2";
+}
+
 initBusinessShell();
 updateLClock();
 setInterval(updateLClock,1000);
