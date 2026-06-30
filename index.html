@@ -1557,7 +1557,7 @@ function renderLNav(){
 }
 function renderLanchas(){
   lNormalize();renderLNav();
-  const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista semanal de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."],clients:["Clientes y tarifas","Tarifas por tipo de servicio y horas minimas por cliente."]};
+  const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista semanal de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."],fleet:["Flota","Capacidad por lancha, disponibilidad y conflictos para validar nuevos servicios."],clients:["Clientes y tarifas","Tarifas por tipo de servicio y horas minimas por cliente."]};
   const [t,s]=titles[lState.current]||titles.dashboard;
   $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,services:lServicesView,calendar:lCalendarView,records:lRecordsView}[lState.current]||lDashboard)();
 }
@@ -2051,14 +2051,14 @@ lNormalize=function(){
 }
 renderLNav=function(){
   lNormalize();
-  const items=[["dashboard","Dashboard","DB"],["pizarras","Pizarras","PZ"],["services","Servicios","SV"],["calendar","Calendario","CA"],["records","Registros","RG"],["clients","Clientes","CL"]];
+  const items=[["dashboard","Dashboard","DB"],["pizarras","Pizarras","PZ"],["services","Servicios","SV"],["fleet","Flota","FL"],["calendar","Calendario","CA"],["records","Registros","RG"],["clients","Clientes","CL"]];
   $("#lNav").innerHTML=`<div class="nav-title">Lanchas</div>${items.map(([id,label,ico])=>`<button class="${lState.current===id?"active":""}" data-l-nav="${id}"><span class="ico">${ico}</span><span>${label}</span></button>`).join("")}`;
 }
 renderLanchas=function(){
   lNormalize();renderLNav();
   const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],pizarras:["Pizarras","Tabla operativa tipo Excel para coordinar servicios de lancha."],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista de 14 dias de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."]};
   const [t,s]=titles[lState.current]||titles.dashboard;
-  $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,calendar:lCalendarView,records:lRecordsView,clients:lClientsView}[lState.current]||lDashboard)();
+  $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,fleet:lFleetView,calendar:lCalendarView,records:lRecordsView,clients:lClientsView}[lState.current]||lDashboard)();
 }
 function updateLClock(){if($("#lClock"))$("#lClock").textContent=new Date().toLocaleTimeString("es-ES",{timeZone:"Europe/Madrid",hour:"2-digit",minute:"2-digit"})+" UTC+2"}
 
