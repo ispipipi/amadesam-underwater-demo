@@ -1,4 +1,4 @@
-<!-- v20260701140554 -->
+<!-- v20260701165502 -->
 <!-- cache-bust:2026-07-01T13:54:52.682318+00:00 -->
 <!doctype html>
 <html lang="es">
@@ -1311,97 +1311,109 @@ function lBoardMap(){
 }
 function lPizarrasView(){
   lNormalize();
-  var f=lState.filters,p=lState.port||"algeciras";
-  var types=["all"].concat(Array.from(new Set(lState.services.map(function(s){return s.type;}))));
-  var launches=["all"].concat(lState.fleet.map(function(f){return f.name;}));
-  var statuses=["active","all","pending","assigned","progress","completed","cancelled"];
+  lEnsurePizarraTableCss();
+  var p=lState.port||"algeciras";
   var activeFilter=lState.pizarraStatusFilter||"active";
 
   var services=lState.services.filter(function(s){
     var portOk=(p==="all"||(s.port||"algeciras")===p);
-    var dayOk=(f.day==="all"||f.day==="today"&&s.date===lIso(0)||f.day==="tomorrow"&&s.date===lIso(1)||f.day==="past"&&s.date<lIso(0));
-    var typeOk=(f.type==="all"||s.type===f.type);
-    var launchOk=(f.launch==="all"||s.launch===f.launch);
     var statusOk=activeFilter==="active"
       ?["pending","assigned","progress"].includes(s.status)
       :activeFilter==="all"||s.status===activeFilter;
-    return portOk&&dayOk&&typeOk&&launchOk&&statusOk;
+    return portOk&&statusOk;
   }).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
 
-  function cardClass(s){
-    if(s.status==="progress")return"board-card board-card-hot";
-    if(s.status==="assigned")return"board-card board-card-process";
-    if(s.status==="completed"||s.status==="cancelled")return"board-card board-card-closed";
-    return"board-card board-card-week";
-  }
-  function badgeCls(s){
-    return s.status==="progress"?"progress":s.status==="assigned"?"confirmed":s.status==="completed"?"report":"quoted";
+  function rowTone(s){
+    if(s.status==="progress")return"pz-hot";
+    if(s.crane||s.stiva)return"pz-yellow";
+    if(s.status==="assigned")return"pz-alert";
+    return"";
   }
 
-  var whatsappLines=services.map(function(s){
-    var client=lClientCfg(s.agent)||{minHours:0};
-    return s.jobNo+" · "+h(s.vessel)+" ("+h(s.agent)+")"
-      +"\n"+lServiceTypeLabel(s.type)+" · "+h(s.date)+" "+h(s.time)+" · "+h(s.duration)+"h"
-      +"\nLancha: "+h(s.launch)+" · Patron: "+h(s.patron)
-      +(s.crane?"\n\uD83C\uDFD7\uFE0F Requiere grua":"")
-      +((+(s.minHours||client.minHours||0))>=4?"\n\u23F1\uFE0F Min. "+(s.minHours||client.minHours)+"h":"")
-      +(s.notes?"\nNota: "+h(s.notes):"");
-  }).join("\n\n");
-  var waUrl="https://wa.me/?text="+encodeURIComponent("PIZARRA LANCHAS\n\n"+whatsappLines);
-
-  var cardsHtml=services.length?services.map(function(s){
-    var client=lClientCfg(s.agent)||{minHours:0};
-    var minH=+(s.minHours||client.minHours||0);
-    var pills="<span class='pill'>"+h(lServiceTypeLabel(s.type))+"</span>"
-      +"<span class='pill'>"+h(s.date)+" "+h(s.time)+"</span>"
-      +"<span class='pill'>"+h(s.duration)+"h</span>"
-      +"<span class='pill'>"+h(s.launch)+"</span>"
-      +(s.crane?"<span class='pill warn'>\uD83C\uDFD7\uFE0F Gr\u00FAa</span>":"")
-      +(minH>=4?"<span class='pill'>\u23F1\uFE0F Min. "+minH+"h</span>":"")
-      +(s.stiva?"<span class='pill warn'>\uD83C\uDFD7\uFE0F Estiva</span>":"");
-    return "<div class='"+cardClass(s)+"' data-l-action='open-svc' data-l-id='"+h(s.id)+"' style='cursor:pointer;margin-bottom:10px'>"
-      +"<div class='board-head' style='margin-bottom:6px'>"
-      +"<div><h3 style='margin:0 0 2px'>"+h(s.vessel)+"</h3>"
-      +"<p style='margin:0;font-size:12px;color:var(--muted)'>"+h(s.jobNo)+" \u00B7 Agente: <strong>"+h(s.agent)+"</strong> \u00B7 "+h(s.patron)+"</p></div>"
-      +"<span class='badge "+badgeCls(s)+"'>"+lStatusLabel(s.status)+"</span>"
-      +"</div>"
-      +"<div class='board-meta' style='margin-bottom:6px'>"+pills+"</div>"
-      +(s.notes?"<div class='board-note' style='font-size:12px'>"+h(s.notes)+"</div>":"")
-      +"</div>";
-  }).join("")
-  :"<div class='empty-state'><p>No hay servicios para los filtros seleccionados.</p></div>";
+  function grueCell(s){
+    var txt="";
+    if(s.crane)txt+="\uD83C\uDFD7\uFE0F Gr\u00FAa ";
+    if(s.stiva)txt+="\uD83C\uDFD7\uFE0F Estiva ";
+    var minH=+(s.minHours||(lClientCfg(s.agent)||{minHours:0}).minHours||0);
+    if(minH>=4)txt+="\u23F1\uFE0F Min."+minH+"h";
+    return txt.trim();
+  }
 
   var statusOpts=["active","all","pending","assigned","progress","completed","cancelled"].map(function(st){
     var label={active:"Solo activos",all:"Todos",pending:"Pendiente",assigned:"Asignado",progress:"En servicio",completed:"Completado",cancelled:"Cancelado"}[st]||st;
     return "<option value='"+st+"' "+(activeFilter===st?"selected":"")+">"+label+"</option>";
   }).join("");
-  var typeOpts=types.map(function(t){
-    return "<option value='"+h(t)+"' "+(f.type===t?"selected":"")+">"+(t==="all"?"Todos los tipos":h(lServiceTypeLabel(t)))+"</option>";
-  }).join("");
-  var launchOpts=launches.map(function(x){
-    return "<option value='"+h(x)+"' "+(f.launch===x?"selected":"")+">"+(x==="all"?"Todas las lanchas":h(x))+"</option>";
+
+  var rows=services.map(function(s){
+    var tone=rowTone(s);
+    var grua=grueCell(s);
+    var launchSel="<select class='pz-select' data-pz-field='launch' data-pz-id='"+h(s.id)+"'>"
+      +"<option value='A7' "+(s.launch==="A7"?"selected":"")+"'>A7</option>"
+      +"<option value='A9' "+(s.launch==="A9"?"selected":"")+"'>A9</option>"
+      +"<option value='AITOR UNO' "+(s.launch==="AITOR UNO"?"selected":"")+"'>AITOR UNO</option>"
+      +"<option value='LEVANTE' "+(s.launch==="LEVANTE"?"selected":"")+"'>LEVANTE</option>"
+      +"<option value='AMADESAM CINCO' "+(s.launch==="AMADESAM CINCO"?"selected":"")+"'>AMADESAM CINCO</option>"
+      +"<option value='' "+(!s.launch?"selected":"")+"'></option>"
+      +"</select>";
+    var typeSel="<select class='pz-select' data-pz-field='type' data-pz-id='"+h(s.id)+"'>"
+      +["crew","provisiones","basura","aguada","lubricantes","lubricantes_barco","underwater"].map(function(t){
+        return "<option value='"+t+"' "+(s.type===t?"selected":"")+">"+lServiceTypeLabel(t)+"</option>";
+      }).join("")
+      +"</select>";
+    var placeSel="<select class='pz-select' data-pz-field='place' data-pz-id='"+h(s.id)+"'>"
+      +["PDM","MS","AL COSTADO","LEVANTE SUR","LS","Fondeo A","Fondeo B","Fondeo C","Muelle Norte","Muelle Sur"].map(function(pl){
+        return "<option "+(s.origin===pl?"selected":"")+">"+pl+"</option>";
+      }).join("")
+      +"</select>";
+    var acctSel="<select class='pz-select pz-account' data-pz-field='account' data-pz-id='"+h(s.id)+"'>"
+      +"<option "+(/OK/i.test(s.account||"")?"selected":"")+"'>OK</option>"
+      +"<option "+(/POR REALIZAR/i.test(s.account||"")||!s.account?"selected":"")+"'>POR REALIZAR</option>"
+      +"<option "+(/NO SE COBRA/i.test(s.account||"")?"selected":"")+"'>NO SE COBRA CC</option>"
+      +"<option "+(/CARGANDO/i.test(s.account||"")?"selected":"")+"'>CARGANDO EN MUELLE</option>"
+      +"</select>";
+    return "<tr class='"+tone+"' data-pz-id='"+h(s.id)+"' style='cursor:pointer'>"
+      +"<td><div class='pizarra-cell' contenteditable='true' data-pz-field='service' data-pz-id='"+h(s.id)+"'>"+h(s.jobNo)+"</div></td>"
+      +"<td>"+typeSel+"</td>"
+      +"<td>"+launchSel+"</td>"
+      +"<td><div class='pizarra-cell' contenteditable='true' data-pz-field='vessel' data-pz-id='"+h(s.id)+"'>"+h(s.vessel)+"</div></td>"
+      +"<td><div class='pizarra-cell' contenteditable='true' data-pz-field='agent' data-pz-id='"+h(s.id)+"'>"+h(s.agent)+"</div></td>"
+      +"<td><div class='pizarra-cell' contenteditable='true' data-pz-field='description' data-pz-id='"+h(s.id)+"'>"+h(s.notes)+"</div></td>"
+      +"<td><input class='pz-date' data-pz-field='day' data-pz-id='"+h(s.id)+"' value='"+h(s.date)+"'></td>"
+      +"<td><input class='pz-time' data-pz-field='hour' data-pz-id='"+h(s.id)+"' value='"+h(s.time)+"'></td>"
+      +"<td>"+placeSel+"</td>"
+      +"<td><div class='pizarra-cell' contenteditable='true' data-pz-field='patron' data-pz-id='"+h(s.id)+"'>"+h(s.patron)+"</div></td>"
+      +"<td class='"+(grua?"pz-yellow":"pz-blue")+"'><div class='pizarra-cell' data-pz-field='crane' data-pz-id='"+h(s.id)+"'>"+grua+"</div></td>"
+      +"<td class='"+(s.notes?"pz-yellow":"")+"'><div class='pizarra-cell' contenteditable='true' data-pz-field='obs' data-pz-id='"+h(s.id)+"'>"+h(s.notes)+"</div></td>"
+      +"<td>"+acctSel+"</td>"
+      +"</tr>";
   }).join("");
 
+  var emptyRow=!rows?"<tr><td colspan='13' style='text-align:center;padding:20px;color:#888'>No hay servicios para este filtro.</td></tr>":"";
+
   return "<div class='panel'>"
-    +"<div class='section'><div><h3>Pizarra de lanchas</h3>"
-    +"<p>"+services.length+" servicio"+(services.length!==1?"s":"")+" \u00B7 Clic en una card para abrir el expediente.</p></div>"
+    +"<div class='section'><div><h3>Pizarra de servicios</h3>"
+    +"<p>Celdas editables para ajustes rapidos. Clic en cualquier fila para abrir el expediente completo.</p></div>"
     +"<div class='toolbar'>"
     +"<button class='btn primary' data-l-action='new-service'>+ Nuevo servicio</button>"
-    +"<a href='"+waUrl+"' target='_blank' class='btn' style='text-decoration:none'>\uD83D\uDCAC WhatsApp</a>"
+    +"<button class='btn' data-l-action='copy-board'>Copiar texto pizarra</button>"
     +"</div></div>"
-    +"<div class='toolbar' style='margin-bottom:14px;flex-wrap:wrap'>"
+    +"<div class='toolbar' style='margin-bottom:12px'>"
     +"<select id='lPizFilterStatus' onchange='lState.pizarraStatusFilter=this.value;renderLanchas()'>"+statusOpts+"</select>"
-    +"<select id='lFilterDay' data-l-change='filters'>"
-    +"<option value='all' "+(f.day==="all"?"selected":"")+">Todos los dias</option>"
-    +"<option value='today' "+(f.day==="today"?"selected":"")+">Hoy</option>"
-    +"<option value='tomorrow' "+(f.day==="tomorrow"?"selected":"")+">Manana</option>"
-    +"<option value='past' "+(f.day==="past"?"selected":"")+">Historico</option>"
-    +"</select>"
-    +"<select id='lFilterType' data-l-change='filters'>"+typeOpts+"</select>"
-    +"<select id='lFilterLaunch' data-l-change='filters'>"+launchOpts+"</select>"
     +"</div>"
-    +cardsHtml
-    +"</div>";
+    +"<div class='pizarra-legend'>"
+    +"<span style='background:#f7dccc'>Base operativa</span>"
+    +"<span style='background:#f4b17f'>Asignado</span>"
+    +"<span style='background:#fff200'>Gr\u00FAa / observaciones</span>"
+    +"<span style='background:#f87171;color:white'>En servicio</span>"
+    +"</div>"
+    +"<div class='pizarra-wrap'><table class='pizarra-table'>"
+    +"<thead><tr>"
+    +"<th>SERVICIO</th><th>TIPO</th><th>LANCHA</th><th>BUQUE</th><th>AGENTE</th>"
+    +"<th>DESCRIPCION</th><th>DIA</th><th>HORA</th><th>LUGAR</th><th>PATRON</th>"
+    +"<th>GRUA / ICONOS</th><th>OBSERVACIONES</th><th>CONTABILIDAD</th>"
+    +"</tr></thead>"
+    +"<tbody>"+rows+emptyRow+"</tbody>"
+    +"</table></div></div>";
 }
 function lBoardDetail(id){
   const j=lBoardJobs().find(x=>x.id===id);if(!j)return;
@@ -1816,6 +1828,13 @@ document.addEventListener("change",e=>{
   // L1 — pizarra persistence: select/input change
   document.querySelectorAll(".pz-select[data-pz-field],.pz-date[data-pz-field],.pz-time[data-pz-field]").forEach(el=>{
     el.addEventListener("change",()=>lSavePizarraCell(el.dataset.pzId,el.dataset.pzField,el.value));
+  });
+  // L2 — pizarra row click opens service detail
+  document.querySelectorAll("tr[data-pz-id]").forEach(row=>{
+    row.addEventListener("click",function(e){
+      if(e.target.closest("input")||e.target.closest("select")||e.target.closest("[contenteditable]"))return;
+      lServiceDetail(row.dataset.pzId);
+    });
   });
   lSave();renderLanchas();
 });
