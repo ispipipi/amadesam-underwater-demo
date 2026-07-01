@@ -1308,9 +1308,53 @@ function lBoardMap(){
   return`<div class="board-map"><div class="map-pin" style="left:22px;top:28px"><strong>Fondeo A/B/C</strong><span class="muted">Betty · Axion · Front</span></div><div class="map-pin" style="right:22px;top:52px"><strong>TTI</strong><span class="muted">CMA CGM Excellence</span></div><div class="map-pin" style="left:38%;bottom:28px"><strong>Muelle Norte</strong><span class="muted">Salida lanchas</span></div><span class="launch-shape" style="left:43%;bottom:118px;transform:scale(.58)"></span></div>`;
 }
 function lPizarrasView(){
-  const jobs=lBoardJobs(),lanes=[["proceso","En proceso / critico"],["48h","Proximas 48 horas"],["semana","Resto semana"]];
-  const confirmed=jobs.filter(x=>x.lane==="confirmado");
-  return`${lPizarraHero()}<div class="board-panel"><div class="board-head"><div><h3>Trabajos de la semana</h3><p>Formato de pizarra operacional: cada card concentra ETA, trabajo, permisos, bunkering y notas de coordinacion.</p></div><button class="btn" data-l-action="copy-board">Copiar texto pizarra</button></div><div class="board-lanes">${lanes.map(([id,title])=>`<div class="board-lane"><h4>${h(title)}</h4>${jobs.filter(x=>x.lane===id).map(x=>lBoardCard(x)).join("")}</div>`).join("")}</div></div><div class="grid two" style="margin-top:14px"><div class="board-panel"><div class="board-head"><div><h3>Servicios confirmados</h3><p>Lista comercial-operativa resumida.</p></div></div>${confirmed.map(x=>lBoardCard(x,true)).join("")}</div><div class="board-panel"><div class="board-head"><div><h3>Reportes pendientes y mensajes</h3><p>Bloques listos para seguimiento y despacho.</p></div></div><div class="report-card"><strong>Reportes pendientes</strong><p class="muted">CASTILLO DE PAMBRE</p></div><div class="report-card" style="margin-top:10px"><strong>Mensaje clave VIVIT AFRICA LNG</strong><p class="muted">Surveyor abordo. Los buzos salen sin surveyor manana a la hora acordada; el surveyor embarca en la lancha para la UWILD.</p></div><div class="toolbar"><button class="btn primary" data-l-action="dispatch-board">Simular envio pizarra</button><button class="btn" data-l-nav="calendar">Ver calendario</button></div></div></div>`;
+  var jobs=lBoardJobs();
+  var laneOrder=[["proceso","En proceso / critico"],["48h","Proximas 48 horas"],["semana","Resto de la semana"],["confirmado","Confirmados"]];
+  var whatsappLines=jobs.map(function(j){
+    return "BARCO "+h(j.ship)+" (IMO "+h(j.imo)+") - "+h(j.window)
+      +"\nCliente: "+h(j.client)+" - "+h(j.where)
+      +"\nTrabajo: "+h(j.scope)
+      +(j.crane?"\nGRUA REQUERIDA":"")
+      +((+(j.minHours||0))>=4?"\nMin. "+j.minHours+"h":"")
+      +(j.note?"\n"+h(j.note):"");
+  }).join("\n\n");
+  var waUrl="https://wa.me/?text="+encodeURIComponent("PIZARRA LANCHAS\n\n"+whatsappLines);
+  var lanesHtml=laneOrder.map(function(pair){
+    var laneId=pair[0],laneTitle=pair[1];
+    var items=jobs.filter(function(j){return j.lane===laneId;});
+    if(!items.length)return"";
+    var cardsHtml=items.map(function(j){
+      var pills="<span class='pill'>IMO "+h(j.imo)+"</span>"
+        +"<span class='pill'>"+h(j.loa)+"</span>"
+        +"<span class='pill'>"+h(j.draft)+"</span>"
+        +lPermitPill(j)+lBunkerPill(j)
+        +(j.crane?"<span class='pill warn'>\uD83C\uDFD7\uFE0F Gr\u00FAa</span>":"")
+        +((+(j.minHours||0))>=4?"<span class='pill'>\u23F1\uFE0F Min. "+j.minHours+"h</span>":"")
+        +(j.surveyor?"<span class='pill'>\uD83D\uDC41\uFE0F Surveyor</span>":"");
+      var badgeCls=j.hot?"progress":j.permits?"confirmed":"quoted";
+      return "<div class='board-card "+lBoardClass(j)+"' data-l-board='"+h(j.id)+"' style='cursor:pointer;margin-bottom:10px'>"
+        +"<div class='board-head' style='margin-bottom:6px'>"
+        +"<div><h3 style='margin:0 0 2px'>"+h(j.ship)+"</h3>"
+        +"<p style='margin:0;font-size:12px;color:var(--muted)'>"+h(j.window)+" \u00B7 "+h(j.where)+" \u00B7 Cliente <strong>"+h(j.client)+"</strong></p></div>"
+        +"<span class='badge "+badgeCls+"'>"+h(j.status)+"</span>"
+        +"</div>"
+        +"<div class='board-meta' style='margin-bottom:6px'>"+pills+"</div>"
+        +"<div class='board-scope' style='font-size:13px;color:var(--muted);margin-bottom:4px'>"+h(j.scope)+"</div>"
+        +(j.note?"<div class='board-note' style='font-size:12px'>"+h(j.note)+"</div>":"")
+        +"</div>";
+    }).join("");
+    return "<div style='margin-bottom:18px'>"
+      +"<div style='font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#8a7a60;background:#f5f0e8;padding:4px 12px;border-radius:5px;margin-bottom:8px'>"+h(laneTitle)+" \u00B7 "+items.length+"</div>"
+      +cardsHtml+"</div>";
+  }).join("");
+  return "<div class='board-panel' style='margin-bottom:14px'>"
+    +"<div class='board-head'><div><h3>Pizarra de lanchas</h3>"
+    +"<p>"+jobs.length+" servicio"+(jobs.length!==1?"s":"")+" activos. Clic en una card para abrir el expediente.</p></div>"
+    +"<div class='toolbar'>"
+    +"<a href='"+waUrl+"' target='_blank' class='btn primary' style='text-decoration:none'>\uD83D\uDCAC Enviar por WhatsApp</a>"
+    +"<button class='btn' data-l-action='copy-board'>Copiar texto</button>"
+    +"</div></div></div>"
+    +lanesHtml;
 }
 function lBoardDetail(id){
   const j=lBoardJobs().find(x=>x.id===id);if(!j)return;
