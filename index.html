@@ -1,4 +1,4 @@
-<!-- v20260701140308 -->
+<!-- v20260701140554 -->
 <!-- cache-bust:2026-07-01T13:54:52.682318+00:00 -->
 <!doctype html>
 <html lang="es">
@@ -2131,10 +2131,7 @@ lPizarraHero=function(){
   const rows=lPizarraRows(),pending=rows.filter(x=>/POR REALIZAR/i.test(x.account)).length,ok=rows.filter(x=>/OK/i.test(x.account)).length,crane=rows.filter(x=>x.crane).length;
   return`<div class="board-panel"><div class="board-head"><div><h3>Pizarra operativa</h3><p>Tabla tipo Excel para coordinar servicios de lancha, fechas, patron, grua, observaciones y contabilidad.</p></div><button class="btn primary" data-l-nav="pizarras">Abrir pizarra</button></div><div class="board-kpis"><div class="board-kpi"><strong>${rows.length}</strong><span class="muted">lineas</span></div><div class="board-kpi"><strong>${pending}</strong><span class="muted">por realizar</span></div><div class="board-kpi"><strong>${ok}</strong><span class="muted">OK</span></div><div class="board-kpi"><strong>${crane}</strong><span class="muted">requieren grua</span></div></div><div style="margin-top:12px">${lPizarraTable(rows.slice(0,8))}</div></div>`;
 }
-lPizarrasView=function(){
-  lEnsurePizarraTableCss();
-  return`<div class="panel"><div class="section"><div><h3>Pizarra de servicios</h3><p>Vista replicada desde la tabla adjunta. Las celdas son editables para simular cambios rapidos antes de despachar.</p></div><div class="toolbar"><button class="btn" data-l-action="copy-board">Copiar texto pizarra</button><button class="btn primary" data-l-action="dispatch-board">Simular envio pizarra</button></div></div><div class="pizarra-legend"><span style="background:#f7dccc">Base operativa</span><span style="background:#f4b17f">Atencion especial</span><span style="background:#fff200">Linea destacada</span><span style="background:#fff3a3">Grua / observaciones</span><span style="background:#e8f7df">OK</span></div>${lPizarraTable()}</div>`;
-}
+/* lPizarrasView: unified view defined above */
 const lNormalizePizarraBase=lNormalize;
 lNormalize=function(){
   const requested=lState.current;
