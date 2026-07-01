@@ -1,4 +1,5 @@
-<!-- v20260701140022 -->
+<!-- v20260701140308 -->
+<!-- cache-bust:2026-07-01T13:54:52.682318+00:00 -->
 <!doctype html>
 <html lang="es">
 <head>
@@ -1276,7 +1277,7 @@ function renderLanchas(){
   const titles={dashboard:["Dashboard","Vista visual de pizarras, servicios, capacidad y actividad del dia."],pizarras:["Pizarras","Trabajos de la semana, servicios confirmados y reportes pendientes en formato operativo visual."],services:["Servicios","Pizarra de servicios con filtros y simulacion de cada paso."],fleet:["Flota","Capacidad por lancha, disponibilidad y patron asignado."],calendar:["Calendario","Vista semana, mes o ano con filtros por estado."],albaranes:["Albaranes","Carga simulada de albaran con OCR y cierre operativo."],records:["Registros","Servicios completados, cancelados y facturados."]};
   const [t,s]=titles[lState.current]||titles.dashboard;
   $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;
-  const map={dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,fleet:lFleetView,calendar:lCalendarView,albaranes:lAlbaranesView,records:lRecordsView};
+  const map={dashboard:lDashboard,pizarras:lPizarrasView,fleet:lFleetView,calendar:lCalendarView,albaranes:lAlbaranesView,records:lRecordsView};
   $("#lanchasView").innerHTML=(map[lState.current]||lDashboard)();
 }
 function lMetric(label,num,small,filter){return`<button class="metric metric-link" data-l-filter="${filter}"><div class="label"><span>${h(label)}</span></div><div class="num">${h(num)}</div><small>${h(small)}</small></button>`}
@@ -1688,7 +1689,7 @@ function lCalendarEvents(status="all"){const p=lState.port||"algeciras";return l
 function lDashboard(){
   lNormalize();
   const p=lPortCfg(),rows=lFilteredServices().filter(s=>s.status!=="cancelled"),today=rows.filter(s=>s.date===lIso(0)),pending=rows.filter(s=>s.status==="pending").length,active=rows.filter(s=>["assigned","progress"].includes(s.status)).length,alb=rows.filter(s=>s.status==="completed"&&!s.albaran?.uploaded).length;
-  return`${lPortChooser()}<div class="grid two"><div class="panel vessel-port-panel"><div class="section"><div><h3>VesselFinder · Puerto de ${h(p.label)}</h3><p>Vista AIS practica para ubicar fondeos, terminales, muelles y ventanas de lancha.</p></div><span class="badge progress">${h(p.locode)}</span></div>${lPortMap()}<div class="toolbar">${p.areas.map(a=>`<span class="pill">${h(a)}</span>`).join("")}</div></div><div class="panel"><div class="section"><div><h3>Resumen operativo</h3><p>Todo baja al expediente del buque: datos, flota, OCR, albaran y factura.</p></div><button class="btn primary" data-l-action="new-service">Nuevo servicio con OCR</button></div><div class="grid two">${lMetric("Hoy",today.length,"Servicios programados","today")}${lMetric("Pendientes",pending,"Por confirmar","pending")}${lMetric("En curso",active,"Asignados / servicio","active")}${lMetric("Albaranes",alb,"Pendientes dentro del expediente","albaranes")}</div><div style="margin-top:14px">${lAlertsHtml()}</div></div></div><div class="panel" style="margin-top:14px"><div class="section"><div><h3>Servicios de ${h(p.label)}</h3><p>Lista operativa tipo Excel. Click en el barco para ver todo de inicio a final.</p></div><button class="btn" data-l-nav="services">Ver todos</button></div>${lServiceTable(today.length?today:rows.slice(0,6))}</div>`;
+  return`${lPortChooser()}<div class="grid two"><div class="panel vessel-port-panel"><div class="section"><div><h3>VesselFinder · Puerto de ${h(p.label)}</h3><p>Vista AIS practica para ubicar fondeos, terminales, muelles y ventanas de lancha.</p></div><span class="badge progress">${h(p.locode)}</span></div>${lPortMap()}<div class="toolbar">${p.areas.map(a=>`<span class="pill">${h(a)}</span>`).join("")}</div></div><div class="panel"><div class="section"><div><h3>Resumen operativo</h3><p>Todo baja al expediente del buque: datos, flota, OCR, albaran y factura.</p></div><button class="btn primary" data-l-action="new-service">Nuevo servicio con OCR</button></div><div class="grid two">${lMetric("Hoy",today.length,"Servicios programados","today")}${lMetric("Pendientes",pending,"Por confirmar","pending")}${lMetric("En curso",active,"Asignados / servicio","active")}${lMetric("Albaranes",alb,"Pendientes dentro del expediente","albaranes")}</div><div style="margin-top:14px">${lAlertsHtml()}</div></div></div><div class="panel" style="margin-top:14px"><div class="section"><div><h3>Servicios de ${h(p.label)}</h3><p>Lista operativa tipo Excel. Click en el barco para ver todo de inicio a final.</p></div><button class="btn" data-l-nav="pizarras">Ver todos</button></div>${lServiceTable(today.length?today:rows.slice(0,6))}</div>`;
 }
 function lCalendarView(){
   lNormalize();
@@ -2142,12 +2143,12 @@ lNormalize=function(){
 }
 renderLNav=function(){
   lNormalize();
-  const items=[["dashboard","Dashboard","DB"],["pizarras","Pizarras","PZ"],["services","Servicios","SV"],["fleet","Flota","FL"],["calendar","Calendario","CA"],["records","Registros","RG"],["clients","Clientes","CL"]];
+  const items=[["dashboard","Dashboard","DB"],["pizarras","Pizarras","PZ"],["fleet","Flota","FL"],["calendar","Calendario","CA"],["records","Registros","RG"],["clients","Clientes","CL"]];
   $("#lNav").innerHTML=`<div class="nav-title">Lanchas</div>${items.map(([id,label,ico])=>`<button class="${lState.current===id?"active":""}" data-l-nav="${id}"><span class="ico">${ico}</span><span>${label}</span></button>`).join("")}`;
 }
 renderLanchas=function(){
   lNormalize();renderLNav();
-  const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],pizarras:["Pizarras","Tabla operativa tipo Excel para coordinar servicios de lancha."],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista de 14 dias de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."]};
+  const p=lPortCfg(),titles={dashboard:["Dashboard",`Elige puerto, revisa VesselFinder y abre servicios activos en ${p.label}.`],pizarras:["Pizarras","Vista operativa unificada: servicios activos con acceso directo al expediente."],services:["Servicios","Lista operativa tipo Excel. Cada buque abre su expediente completo."],calendar:["Calendario","Vista de 14 dias de servicios. Click en un buque para abrir expediente."],records:["Registros","Historial de servicios completados, cancelados y facturados."]};
   const [t,s]=titles[lState.current]||titles.dashboard;
   $("#lTitle").textContent=t;$("#lSubtitle").textContent=s;$("#lanchasView").innerHTML=({dashboard:lDashboard,pizarras:lPizarrasView,services:lServicesView,fleet:lFleetView,calendar:lCalendarView,records:lRecordsView,clients:lClientsView}[lState.current]||lDashboard)();
 }
